@@ -232,6 +232,13 @@ main {
     box-shadow: var(--shadow);
     margin-bottom: 1rem;
 }
+.genre-chart-section {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1rem;
+}
 
 .member-name {
     font-size: 1.5rem;
@@ -278,6 +285,19 @@ main {
     color: var(--primary);
     font-weight: bold;
 }
+
+.more-btn {
+    display: inline-block;
+    margin-top: 0.4rem;
+    padding: 0.25rem 0.7rem;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 0.78rem;
+    color: var(--primary);
+    cursor: pointer;
+}
+.more-btn:hover { background: #f0f3f8; }
 
 /* バンドカード */
 .band-card {
@@ -545,4 +565,15 @@ footer {
     .stat-value { font-size: 1.5rem; }
     .member-stats { flex-direction: column; gap: 0.5rem; }
     .ranking-tabs { gap: 0.3rem; }
+}
+
+/* ジャンルレーダーチャート */
+.genre-chart-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 0.5rem 0 1rem;
+}
+.genre-chart-wrap canvas {
+    max-width: 400px;
+    max-height: 400px;
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>軽音サークル 演奏統計</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="css/style.css?v=1.1.2">
+    <link rel="stylesheet" href="css/style.css?v=1.4.0">
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -37,7 +37,7 @@
         <nav class="tabs">
             <button class="tab active" data-tab="overview">全体統計</button>
             <button class="tab" data-tab="rankings">ランキング</button>
-            <button class="tab" data-tab="search-result">検索結果</button>
+<button class="tab" data-tab="search-result">検索結果</button>
         </nav>
 
         <main>
@@ -123,11 +123,13 @@
                     <button class="ranking-tab" data-ranking="collaboration">交流度</button>
                     <button class="ranking-tab" data-ranking="events">イベント一覧</button>
                     <button class="ranking-tab" data-ranking="parts">パート別</button>
+                    <button class="ranking-tab" data-ranking="grade">学年別</button>
+                    <button class="ranking-tab" data-ranking="debut">初出演</button>
                 </div>
                 <div id="ranking-content"></div>
             </section>
 
-            <!-- 検索結果 -->
+<!-- 検索結果 -->
             <section id="search-result" class="tab-content">
                 <div id="search-placeholder" class="placeholder">
                     名前を入力して検索してください
@@ -137,11 +139,53 @@
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.1.0</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.4.0</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v1.4.0 (2026-03-12)</dt>
+                    <dd>
+                        <ul>
+                            <li>イベント詳細ページ追加（イベント一覧からタップで各ライブの演奏一覧へ）</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.3.0 (2026-03-12)</dt>
+                    <dd>
+                        <ul>
+                            <li>学年別統計タブ追加（各学年のメンバー数・人気アーティスト・アクティブメンバー）</li>
+                            <li>初出演ランキングタブ追加（最新メンバー順）</li>
+                            <li>バンド数/曲数/多様性ランキングに学年フィルター追加</li>
+                            <li>検索サジェストに曲名・アーティスト名を追加（2文字以上で候補表示）</li>
+                            <li>アーティスト詳細に「このアーティストを演奏した人がよく演奏するアーティスト」を追加</li>
+                            <li>メンバー詳細に初出演日を追加</li>
+                            <li>レーダーチャートのラベル見切れ修正</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.2.0 (2026-03-12)</dt>
+                    <dd>
+                        <ul>
+                            <li>メンバー詳細に音楽の傾向レーダーチャートを追加（邦ロック・J-POP・ボカロ等7ジャンル）</li>
+                            <li>ランキング1〜3位にメダル絵文字（🥇🥈🥉）を追加</li>
+                            <li>メンバー詳細のアーティスト欄でトップアーティスト（6回以上）に🥇を表示</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.1.2 (2026-03-12)</dt>
+                    <dd>
+                        <ul>
+                            <li>分割動画（20分枠）の統合対応：同一バンドの連続動画を1エントリにまとめ、リンクを2つ表示</li>
+                            <li>完全重複動画（RADWIMPS・JamiroquaiMJ）を統合</li>
+                            <li>曲名パース失敗11件を手動修正（ZAZEN BOYS・Kroi・King Gnu等）</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.1.1 (2026-03-11)</dt>
+                    <dd>
+                        <ul>
+                            <li>画面遷移時の「← 戻る」ボタンを追加</li>
+                            <li>メンバー名の異体字・表記揺れをさらに38件統合（402名に）</li>
+                            <li>パート別ランキングから誤認識パート（Winding. / Road.）を除去</li>
+                        </ul>
+                    </dd>
                     <dt>v1.1.0 (2026-03-11)</dt>
                     <dd>
                         <ul>
@@ -172,7 +216,8 @@
         </footer>
     </div>
 
-    <script src="js/auth.js?v=1.1.2"></script>
-    <script src="js/app.js?v=1.1.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/auth.js?v=1.4.0"></script>
+    <script src="js/app.js?v=1.4.0"></script>
 </body>
 </html>

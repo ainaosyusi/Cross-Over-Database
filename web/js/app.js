@@ -1,11 +1,72 @@
 "use strict";
 
 let membersData = null;
+let artistGlobalTop = null; // { artistName: [rank1Count, rank2Count] }
 let rankingsData = null;
 let videosData = null;
+let songIndex = null;
+let debutData = null;
+let rankingGradeFilter = null;
+
+// --- グレードヘルパー ---
+const GRADE_ORDER_LIST = ["1", "2", "3", "4", "M1", "M2", "B1", "B2"];
+function gradeValue(g) {
+    const i = GRADE_ORDER_LIST.indexOf(g);
+    return i >= 0 ? i + 1 : 0;
+}
+function maxGrade(grades) {
+    if (!grades || grades.length === 0) return "?";
+    return grades.reduce((best, g) => gradeValue(g) > gradeValue(best) ? g : best, grades[0]);
+}
+
+// --- 曲インデックス構築 ---
+function buildSongIndex() {
+    if (!videosData || songIndex) return;
+    const songs = new Map();
+    for (const v of videosData.videos) {
+        for (const s of (v.songs || [])) {
+            const key = `${s.title}|||${s.artist}`;
+            if (!songs.has(key)) songs.set(key, { title: s.title, artist: s.artist, count: 0 });
+            songs.get(key).count++;
+        }
+    }
+    songIndex = [...songs.values()].sort((a, b) => b.count - a.count);
+}
+
+// --- 初出演データ構築 ---
+function computeDebutData() {
+    if (!videosData) return;
+    const debuts = {};
+    const sorted = [...videosData.videos].sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1);
+    for (const v of sorted) {
+        for (const m of (v.members || [])) {
+            if (!debuts[m.name]) {
+                debuts[m.name] = { date: v.date, title: v.title, band_name: v.band_name, url: v.url };
+            }
+        }
+    }
+    debutData = debuts;
+}
+
+function computeArtistGlobalTop() {
+    if (!membersData?.members) return;
+    const artistCounts = {}; // { artistName: [count, count, ...] }
+    for (const member of Object.values(membersData.members)) {
+        for (const [artist, count] of Object.entries(member.artist_stats || {})) {
+            if (!artistCounts[artist]) artistCounts[artist] = [];
+            artistCounts[artist].push(count);
+        }
+    }
+    artistGlobalTop = {};
+    for (const [artist, counts] of Object.entries(artistCounts)) {
+        const sorted = counts.sort((a, b) => b - a);
+        artistGlobalTop[artist] = [sorted[0] ?? 0, sorted[1] ?? 0];
+    }
+}
 
 // --- ナビゲーション履歴 ---
 const navHistory = [];
+let currentView = { type: "tab", tab: "overview" };
 function pushNav(entry) {
     navHistory.push(entry);
 }
@@ -26,6 +87,9 @@ function goBack() {
             break;
         case "song":
             _showSongDetailNoHistory(prev.title, prev.artist);
+            break;
+        case "event":
+            _showEventDetailNoHistory(prev.eventName);
             break;
         case "tab":
             switchToTab(prev.tab, prev.rankingTab);
@@ -61,6 +125,9 @@ async function loadData() {
         rankingsData = rankings;
         videosData = videos;
 
+        buildSongIndex();
+        computeDebutData();
+        computeArtistGlobalTop();
         renderOverview();
         renderRanking("band");
         const generatedAt = rankings.generated_at
@@ -97,6 +164,8 @@ const RANKING_DESCRIPTIONS = {
     "collaboration": "共演したユニーク人数。多くの異なるメンバーと組んだ人ほど上位。",
     "events": "各プレイリスト（イベント）の統計情報。",
     "parts": "パート別の延べ出演回数とユニークメンバー数。",
+    "grade": "学年別のメンバー数・活動量・人気アーティストの傾向。各メンバーの最終学年でグルーピング。",
+    "debut": "初出演日が最近の順。最新メンバーが上位。",
 };
 
 // --- ランキング ---
@@ -107,18 +176,24 @@ function renderRanking(type) {
     const descHtml = desc ? `<div class="ranking-description">${escapeHtml(desc)}</div>` : "";
 
     switch (type) {
-        case "band":
-            html = rankingTable(["順位", "名前", "バンド数"],
-                rankingsData.by_band_count.map((r, i) => [i + 1, r.name, r.count]), true);
+        case "band": {
+            const filtered = applyGradeFilter(rankingsData.by_band_count);
+            const reranked = filtered.map((r, i) => [i + 1, r.name, r.count]);
+            html = renderGradeFilterUI(type) + rankingTable(["順位", "名前", "バンド数"], reranked, true);
             break;
-        case "song":
-            html = rankingTable(["順位", "名前", "曲数"],
-                rankingsData.by_song_count.map((r, i) => [i + 1, r.name, r.count]), true);
+        }
+        case "song": {
+            const filtered = applyGradeFilter(rankingsData.by_song_count);
+            const reranked = filtered.map((r, i) => [i + 1, r.name, r.count]);
+            html = renderGradeFilterUI(type) + rankingTable(["順位", "名前", "曲数"], reranked, true);
             break;
-        case "diversity":
-            html = rankingTable(["順位", "名前", "ユニークアーティスト数"],
-                rankingsData.by_artist_diversity.map((r, i) => [i + 1, r.name, r.unique_artists]), true);
+        }
+        case "diversity": {
+            const filtered = applyGradeFilter(rankingsData.by_artist_diversity);
+            const reranked = filtered.map((r, i) => [i + 1, r.name, r.unique_artists]);
+            html = renderGradeFilterUI(type) + rankingTable(["順位", "名前", "ユニークアーティスト数"], reranked, true);
             break;
+        }
         case "popular-songs":
             html = renderPopularSongsRanking(rankingsData.popular_songs || []);
             break;
@@ -146,6 +221,12 @@ function renderRanking(type) {
         case "parts":
             html = renderPartStats(rankingsData.part_stats || []);
             break;
+        case "grade":
+            html = renderGradeStats();
+            break;
+        case "debut":
+            html = renderDebutRanking();
+            break;
     }
 
     container.innerHTML = descHtml + html;
@@ -156,13 +237,10 @@ function renderEventList(events) {
     return events.map(e => {
         const noData = e.songs === 0 && e.members === 0;
         const plUrl = e.playlist_id ? `https://www.youtube.com/playlist?list=${encodeURIComponent(e.playlist_id)}` : "";
-        const eventName = plUrl
-            ? `<a href="${plUrl}" target="_blank" rel="noopener" class="event-link">${escapeHtml(e.event)}</a>`
-            : escapeHtml(e.event);
         return `
         <div class="band-card">
             <div class="band-date">${escapeHtml(e.date || "日付不明")}</div>
-            <div class="member-name" style="font-size:1.1rem;margin:0.3rem 0">${eventName}</div>
+            <div class="member-name clickable" style="font-size:1.1rem;margin:0.3rem 0" onclick="showEventDetail('${escapeAttr(e.event)}')">${escapeHtml(e.event)}</div>
             ${noData ? `<div class="no-data-notice">セトリ不明および動画概要欄の情報欠損により情報取得不可能（情報提供者待ってます）</div>` : `
             <div class="member-stats" style="font-size:0.85rem">
                 <span>バンド数 <strong>${e.bands}</strong></span>
@@ -171,6 +249,7 @@ function renderEventList(events) {
                 <span>アーティスト <strong>${e.artists}</strong></span>
                 ${e.total_views ? `<span>総視聴 <strong>${e.total_views.toLocaleString()}回</strong></span>` : ""}
             </div>`}
+            ${plUrl ? `<a href="${plUrl}" target="_blank" rel="noopener" class="band-link">YouTubeプレイリスト →</a>` : ""}
         </div>`;
     }).join("");
 }
@@ -181,7 +260,8 @@ function rankingTable(headers, rows, nameClickable = false) {
         const cells = row.map((cell, ci) => {
             if (ci === 0) {
                 const cls = cell <= 3 ? ["", "gold", "silver", "bronze"][cell] : "";
-                return `<td class="rank-num ${cls}">${cell}</td>`;
+                const medal = ["", "🥇", "🥈", "🥉"][cell] || "";
+                return `<td class="rank-num ${cls}">${medal || cell}</td>`;
             }
             if (ci === 1 && nameClickable) {
                 return `<td class="clickable" onclick="searchMember('${escapeHtml(cell)}')">${escapeHtml(cell)}</td>`;
@@ -189,6 +269,91 @@ function rankingTable(headers, rows, nameClickable = false) {
             return `<td>${escapeHtml(String(cell))}</td>`;
         }).join("");
         return `<tr>${cells}</tr>`;
+    }).join("");
+    return `<table class="ranking-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+// --- 学年フィルター ---
+function renderGradeFilterUI(type) {
+    const all = rankingGradeFilter === null;
+    const btns = [null, ...GRADE_ORDER_LIST].map(g => {
+        const label = g === null ? "全員" : `${g}年`;
+        const active = (g === null ? all : rankingGradeFilter === g) ? " active" : "";
+        return `<button class="ranking-tab${active}" style="font-size:0.75rem;padding:0.3rem 0.6rem" onclick="setGradeFilter(${g === null ? "null" : `'${g}'`}, '${type}')">${label}</button>`;
+    }).join("");
+    return `<div class="ranking-tabs" style="margin-bottom:0.5rem">${btns}</div>`;
+}
+function setGradeFilter(grade, type) {
+    rankingGradeFilter = grade;
+    renderRanking(type);
+}
+function applyGradeFilter(items) {
+    if (!rankingGradeFilter || !membersData) return items;
+    return items.filter(r => {
+        const m = membersData.members[r.name];
+        return m && maxGrade(m.grades_seen || []) === rankingGradeFilter;
+    });
+}
+
+// --- 学年別統計 ---
+function renderGradeStats() {
+    if (!membersData) return '<div class="placeholder">データなし</div>';
+    const gradeGroups = {};
+    for (const [name, m] of Object.entries(membersData.members)) {
+        const grade = maxGrade(m.grades_seen || []);
+        if (!gradeGroups[grade]) gradeGroups[grade] = [];
+        gradeGroups[grade].push({ name, ...m });
+    }
+    const grades = Object.keys(gradeGroups).sort((a, b) => gradeValue(a) - gradeValue(b));
+    return grades.map(grade => {
+        const members = gradeGroups[grade];
+        const totalBands = members.reduce((s, m) => s + m.total_bands, 0);
+        const totalSongs = members.reduce((s, m) => s + m.total_songs, 0);
+        const artistCount = {};
+        for (const m of members) {
+            for (const [a, c] of Object.entries(m.artist_stats || {})) {
+                artistCount[a] = (artistCount[a] || 0) + c;
+            }
+        }
+        const topArtists = Object.entries(artistCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        const topMembers = [...members].sort((a, b) => b.total_bands - a.total_bands).slice(0, 5);
+        const label = GRADE_ORDER_LIST.includes(grade) ? `${grade}年生` : "学年不明";
+        return `<div class="band-card">
+            <div class="member-name" style="font-size:1.1rem;margin:0.3rem 0">${label} <span class="part-count">(${members.length}人)</span></div>
+            <div class="member-stats" style="font-size:0.85rem;margin-bottom:0.5rem">
+                <span>延べバンド数 <strong>${totalBands}</strong></span>
+                <span>延べ曲数 <strong>${totalSongs}</strong></span>
+            </div>
+            <div style="font-size:0.8rem;color:#777;margin-bottom:0.3rem">よく演奏するアーティスト:
+                ${topArtists.map(([a, c]) => `<span class="clickable" onclick="showArtistDetail('${escapeAttr(a)}')">${escapeHtml(a)}(${c})</span>`).join("　")}
+            </div>
+            <div style="font-size:0.8rem;color:#777">アクティブメンバー:
+                ${topMembers.map(m => `<span class="clickable" onclick="searchMember('${escapeAttr(m.name)}')">${escapeHtml(m.name)}(${m.total_bands})</span>`).join("　")}
+            </div>
+        </div>`;
+    }).join("");
+}
+
+// --- 初出演ランキング ---
+function renderDebutRanking() {
+    if (!debutData || !membersData) return '<div class="placeholder">データなし</div>';
+    const list = Object.entries(debutData)
+        .filter(([name]) => membersData.members[name])
+        .map(([name, d]) => ({ name, ...d }))
+        .sort((a, b) => (b.date || "") > (a.date || "") ? 1 : -1);
+    const ths = ["順位", "名前", "初出演日", "初出演バンド"].map(h => `<th>${h}</th>`).join("");
+    const trs = list.slice(0, 100).map((d, i) => {
+        const rank = i + 1;
+        const cls = rank <= 3 ? ["", "gold", "silver", "bronze"][rank] : "";
+        const link = d.url
+            ? `<a href="${escapeHtml(d.url)}" target="_blank" rel="noopener" class="clickable">${escapeHtml(d.band_name || d.title || "-")}</a>`
+            : escapeHtml(d.band_name || d.title || "-");
+        return `<tr>
+            <td class="rank-num ${cls}">${rank}</td>
+            <td class="clickable" onclick="searchMember('${escapeAttr(d.name)}')">${escapeHtml(d.name)}</td>
+            <td style="font-size:0.85rem">${d.date || "-"}</td>
+            <td style="font-size:0.8rem">${link}</td>
+        </tr>`;
     }).join("");
     return `<table class="ranking-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
 }
@@ -331,6 +496,7 @@ function showArtistDetail(artist) {
     _showArtistDetailNoHistory(artist);
 }
 function _showArtistDetailNoHistory(artist) {
+    currentView = { type: "artist", artist };
     if (!videosData) return;
     const matches = [];
     const songSet = new Map();
@@ -352,7 +518,7 @@ function _showArtistDetailNoHistory(artist) {
                 <div class="member-name clickable" onclick="showSongDetail('${escapeAttr(title)}', '${escapeAttr(artist)}')" style="font-size:1rem;margin-bottom:0.3rem">${escapeHtml(title)} <span class="count">(${vids.length}回)</span></div>
                 <div class="band-members" style="font-size:0.85rem;color:#888">${vids.map(v => {
                     const label = v.band_name || v.title;
-                    return v.url ? `<a href="${escapeHtml(v.url)}" target="_blank" rel="noopener" class="clickable">${escapeHtml(label)}</a>` : escapeHtml(label);
+                    return videoLinkInline(v, label);
                 }).join(", ")}</div>
             </div>`
         ).join("");
@@ -361,6 +527,25 @@ function _showArtistDetailNoHistory(artist) {
     const placeholder = document.getElementById("search-placeholder");
     placeholder.classList.add("hidden");
     detail.classList.remove("hidden");
+    // アーティスト連鎖マップ
+    let chainHtml = "";
+    if (membersData) {
+        const memberNames = new Set(matches.flatMap(v => (v.members || []).map(m => m.name)));
+        const chainCount = {};
+        for (const mname of memberNames) {
+            const m = membersData.members[mname];
+            if (!m) continue;
+            for (const [a, c] of Object.entries(m.artist_stats || {})) {
+                if (a === artist) continue;
+                chainCount[a] = (chainCount[a] || 0) + c;
+            }
+        }
+        const topChain = Object.entries(chainCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        chainHtml = topChain.map(([a, c]) =>
+            `<span class="artist-tag clickable" onclick="showArtistDetail('${escapeAttr(a)}')">${escapeHtml(a)} <span class="count">(${c})</span></span>`
+        ).join("");
+    }
+
     detail.innerHTML = `
         ${backButton()}
         <div class="member-header">
@@ -370,6 +555,7 @@ function _showArtistDetailNoHistory(artist) {
                 <span>曲数 <strong>${songSet.size}</strong></span>
             </div>
         </div>
+        ${chainHtml ? `<h3 class="section-title">このアーティストを演奏した人がよく演奏するアーティスト</h3><div class="artist-list">${chainHtml}</div>` : ""}
         <h3 class="section-title">演奏された曲</h3>
         ${songList || '<div class="placeholder">データなし</div>'}
     `;
@@ -383,6 +569,7 @@ function showSongDetail(title, artist) {
     _showSongDetailNoHistory(title, artist);
 }
 function _showSongDetailNoHistory(title, artist) {
+    currentView = { type: "song", title, artist };
     if (!videosData) return;
     const matches = [];
     for (const v of videosData.videos) {
@@ -398,7 +585,7 @@ function _showSongDetailNoHistory(title, artist) {
         return `<div class="band-card">
             <div class="band-date">${v.date || "日付不明"} ${bandLabel}</div>
             <div class="band-members">メンバー: ${members}</div>
-            ${v.url ? `<a class="band-link" href="${escapeHtml(v.url)}" target="_blank" rel="noopener">動画を見る →</a>` : ""}
+            ${videoLinks(v)}
         </div>`;
     }).join("");
 
@@ -422,21 +609,64 @@ function _showSongDetailNoHistory(title, artist) {
     _switchToSearchResult();
 }
 
+// --- イベント詳細 ---
+function showEventDetail(eventName) {
+    pushNav(_currentNavState());
+    _showEventDetailNoHistory(eventName);
+}
+function _showEventDetailNoHistory(eventName) {
+    currentView = { type: "event", eventName };
+    if (!videosData) return;
+    const eventVideos = videosData.videos
+        .filter(v => v.event_name === eventName)
+        .sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1);
+    const eventInfo = (rankingsData.event_stats || []).find(e => e.event === eventName);
+    const plUrl = eventInfo?.playlist_id
+        ? `https://www.youtube.com/playlist?list=${encodeURIComponent(eventInfo.playlist_id)}`
+        : "";
+
+    const bandCards = eventVideos.map((v, i) => {
+        const songs = (v.songs || []).map(s =>
+            `<li><span class="clickable" onclick="showSongDetail('${escapeAttr(s.title)}','${escapeAttr(s.artist)}')">${escapeHtml(s.title)}</span> / <span class="clickable" onclick="showArtistDetail('${escapeAttr(s.artist)}')">${escapeHtml(s.artist)}</span></li>`
+        ).join("");
+        const memberList = (v.members || []).map(m =>
+            `<span class="clickable" onclick="searchMember('${escapeAttr(m.name)}')">${escapeHtml(m.name)}</span>`
+        ).join(", ");
+        const bandLabel = v.band_name ? `<span class="band-name-tag">${escapeHtml(v.band_name)}</span>` : "";
+        const noData = !v.songs.length && !v.members.length;
+        return `<div class="band-card">
+            <div class="band-date">${i + 1}. ${bandLabel}</div>
+            ${noData ? `<div class="no-data-notice">セトリ不明</div>` : `
+            <ul class="band-songs">${songs || "<li>セトリ不明</li>"}</ul>
+            <div class="band-members">メンバー: ${memberList || "不明"}</div>`}
+            ${videoLinks(v)}
+        </div>`;
+    }).join("");
+
+    const detail = document.getElementById("member-detail");
+    document.getElementById("search-placeholder").classList.add("hidden");
+    detail.classList.remove("hidden");
+    detail.innerHTML = `
+        ${backButton()}
+        <div class="member-header">
+            <div class="member-name">${escapeHtml(eventName)}</div>
+            <div class="member-stats">
+                <span>バンド数 <strong>${eventInfo?.bands ?? eventVideos.length}</strong></span>
+                <span>曲数 <strong>${eventInfo?.songs ?? "?"}</strong></span>
+                <span>参加者 <strong>${eventInfo?.members ?? "?"}人</strong></span>
+                ${eventInfo?.date ? `<span>開催日 <strong>${eventInfo.date}</strong></span>` : ""}
+            </div>
+        </div>
+        ${plUrl ? `<a href="${plUrl}" target="_blank" rel="noopener" class="band-link">YouTubeプレイリストで見る →</a>` : ""}
+        <h3 class="section-title">演奏一覧 (${eventVideos.length}バンド)</h3>
+        ${bandCards || '<div class="placeholder">データなし</div>'}
+    `;
+    _switchToSearchResult();
+}
+
 // --- ナビゲーションヘルパー ---
 function _currentNavState() {
-    // 現在アクティブなタブを記録
-    const activeTab = document.querySelector(".tab.active");
-    const tabName = activeTab ? activeTab.dataset.tab : "overview";
-    if (tabName === "search-result") {
-        // 検索結果画面の場合、表示内容を判定
-        const detail = document.getElementById("member-detail");
-        const memberName = document.getElementById("search-input")?.value;
-        if (detail && !detail.classList.contains("hidden") && memberName) {
-            return { type: "member", name: memberName };
-        }
-    }
-    const activeRanking = document.querySelector(".ranking-tab.active");
-    return { type: "tab", tab: tabName, rankingTab: activeRanking?.dataset.ranking || null };
+    return { ...currentView };
 }
 
 function _switchToSearchResult() {
@@ -451,12 +681,34 @@ function escapeAttr(str) {
     return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
 }
 
+// --- 動画リンク生成（分割動画は2つ表示）---
+function videoLinks(v, label) {
+    const lbl = label || v.band_name || v.title;
+    if (!v.url) return escapeHtml(lbl);
+    let html = `<a class="band-link" href="${escapeHtml(v.url)}" target="_blank" rel="noopener">動画を見る →</a>`;
+    if (v.secondary_url) {
+        html += ` <a class="band-link" href="${escapeHtml(v.secondary_url)}" target="_blank" rel="noopener">動画を見る（後半）→</a>`;
+    }
+    return html;
+}
+
+function videoLinkInline(v, label) {
+    const lbl = label || v.band_name || v.title;
+    if (!v.url) return escapeHtml(lbl);
+    let html = `<a href="${escapeHtml(v.url)}" target="_blank" rel="noopener" class="clickable">${escapeHtml(lbl)}</a>`;
+    if (v.secondary_url) {
+        html += ` <a href="${escapeHtml(v.secondary_url)}" target="_blank" rel="noopener" class="clickable">(後半)</a>`;
+    }
+    return html;
+}
+
 // --- メンバー検索 ---
 function searchMember(name) {
     pushNav(_currentNavState());
     _showMemberDetailNoHistory(name);
 }
 function _showMemberDetailNoHistory(name) {
+    currentView = { type: "member", name };
     const input = document.getElementById("search-input");
     input.value = name;
     hideSuggestions();
@@ -480,17 +732,21 @@ function showMemberDetail(name) {
     detail.classList.remove("hidden");
 
     // 共演者タグ
-    const coMembers = Object.entries(member.co_member_stats)
+    const coMemberTags = Object.entries(member.co_member_stats)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 20)
-        .map(([n, c]) => `<span class="co-member-tag clickable" onclick="searchMember('${escapeHtml(n)}')">${escapeHtml(n)} <span class="count">(${c}回)</span></span>`)
-        .join("");
+        .slice(0, 30)
+        .map(([n, c]) => `<span class="co-member-tag clickable" onclick="searchMember('${escapeHtml(n)}')">${escapeHtml(n)} <span class="count">(${c}回)</span></span>`);
+    const coMembers = collapsibleTags(coMemberTags, 5, `co-${name.replace(/[^a-zA-Z0-9]/g, "_")}`);
 
-    // アーティストタグ（クリックでアーティスト詳細へ）
-    const artists = Object.entries(member.artist_stats)
-        .sort((a, b) => b[1] - a[1])
-        .map(([a, c]) => `<span class="artist-tag clickable" onclick="showArtistDetail('${escapeAttr(a)}')">${escapeHtml(a)} <span class="count">(${c}回)</span></span>`)
-        .join("");
+    // アーティストタグ（クリックでアーティスト詳細へ）+ メダル
+    const artistEntries = Object.entries(member.artist_stats).sort((a, b) => b[1] - a[1]);
+    const artistTags = artistEntries
+        .map(([a, c]) => {
+            const top = artistGlobalTop?.[a] ?? [0, 0];
+            const medal = (c === top[0] && c >= 6) ? " 🥇" : (c === top[1] && c < top[0] && c >= 5) ? " 🥈" : "";
+            return `<span class="artist-tag clickable" onclick="showArtistDetail('${escapeAttr(a)}')">${escapeHtml(a)} <span class="count">(${c}回)</span>${medal}</span>`;
+        });
+    const artists = collapsibleTags(artistTags, 5, `art-${name.replace(/[^a-zA-Z0-9]/g, "_")}`);
 
     // バンド一覧カード
     const bands = (member.bands || []).map(b => {
@@ -505,9 +761,16 @@ function showMemberDetail(name) {
                 <div class="band-date">${b.date || "日付不明"} ${bandLabel} ${partLabel}</div>
                 <ul class="band-songs">${songs}</ul>
                 <div class="band-members">メンバー: ${members}</div>
-                ${b.url ? `<a class="band-link" href="${escapeHtml(b.url)}" target="_blank" rel="noopener">動画を見る →</a>` : ""}
+                ${videoLinks(b)}
             </div>`;
     }).join("");
+
+    // ジャンルレーダーチャート
+    const GENRES = ["邦ロック", "J-POP", "ボカロ/アニソン", "洋楽", "テクニカル", "昭和/歌謡曲", "パンク/ヘビー"];
+    const GENRE_LABELS = ["邦ロック", "J-POP", "ボカロ", "洋楽", "テクニカル", "昭和/歌謡", "パンク"];
+    const genreDist = member.genre_distribution || {};
+    const hasGenreData = GENRES.some(g => genreDist[g] > 0);
+    const genreChartId = `genre-chart-${name.replace(/[^a-zA-Z0-9]/g, "_")}`;
 
     detail.innerHTML = `
         ${backButton()}
@@ -518,37 +781,101 @@ function showMemberDetail(name) {
                 <span>曲数 <strong>${member.total_songs}</strong></span>
                 <span>アーティスト <strong>${member.unique_artists}</strong></span>
                 <span>学年 <strong>${(member.grades_seen || []).join(", ")}</strong></span>
+                ${debutData?.[name] ? `<span>初出演 <strong>${debutData[name].date || "不明"}</strong></span>` : ""}
             </div>
         </div>
         <h3 class="section-title">よく一緒にやる人</h3>
-        <div class="co-member-list">${coMembers || '<span class="placeholder">データなし</span>'}</div>
+        <div class="co-member-list">${coMembers}</div>
         <h3 class="section-title">演奏アーティスト</h3>
-        <div class="artist-list">${artists || '<span class="placeholder">データなし</span>'}</div>
+        <div class="artist-list">${artists}</div>
+        ${hasGenreData ? `
+        <div class="genre-chart-section">
+            <h3 class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+                音楽の傾向
+                <button class="more-btn" id="${genreChartId}-toggle" onclick="toggleGenreChart('${genreChartId}')">隠す</button>
+            </h3>
+            <div id="${genreChartId}-wrap" class="genre-chart-wrap"><canvas id="${genreChartId}" width="400" height="400"></canvas></div>
+        </div>` : ""}
         <h3 class="section-title">演奏一覧 (${member.total_bands}回)</h3>
         ${bands || '<div class="placeholder">データなし</div>'}
     `;
+
+    // レーダーチャート描画
+    if (hasGenreData) {
+        const ctx = document.getElementById(genreChartId).getContext("2d");
+        const values = GENRES.map(g => genreDist[g] || 0);
+        new Chart(ctx, {
+            type: "radar",
+            data: {
+                labels: GENRE_LABELS,
+                datasets: [{
+                    data: values,
+                    backgroundColor: "rgba(66, 133, 244, 0.18)",
+                    borderColor: "rgba(66, 133, 244, 0.85)",
+                    borderWidth: 2,
+                    pointBackgroundColor: "rgba(66, 133, 244, 0.9)",
+                    pointRadius: 3,
+                }]
+            },
+            options: {
+                responsive: false,
+                layout: { padding: 30 },
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        ticks: { display: false, stepSize: 1 },
+                        pointLabels: { font: { size: 12 }, color: "#444" },
+                        grid: { color: "rgba(0,0,0,0.08)" },
+                        angleLines: { color: "rgba(0,0,0,0.08)" },
+                    }
+                }
+            }
+        });
+    }
+}
+
+// --- 折りたたみタグリスト ---
+function collapsibleTags(tags, limit, uid) {
+    if (!tags.length) return '<span style="color:#aaa">データなし</span>';
+    if (tags.length <= limit) return tags.join("");
+    const visible = tags.slice(0, limit).join("");
+    const hidden = tags.slice(limit).join("");
+    const more = tags.length - limit;
+    return `${visible}<span id="${uid}-more" class="hidden">${hidden}</span>
+        <button class="more-btn" id="${uid}-btn" onclick="toggleMoreTags('${uid}', ${more})">残り${more}件を表示</button>`;
+}
+function toggleMoreTags(uid, more) {
+    const el = document.getElementById(`${uid}-more`);
+    const btn = document.getElementById(`${uid}-btn`);
+    const isHidden = el.classList.toggle("hidden");
+    btn.textContent = isHidden ? `残り${more}件を表示` : "閉じる";
+}
+
+// --- チャートトグル ---
+function toggleGenreChart(id) {
+    const wrap = document.getElementById(`${id}-wrap`);
+    const btn = document.getElementById(`${id}-toggle`);
+    const isHidden = wrap.classList.toggle("hidden");
+    btn.textContent = isHidden ? "表示" : "隠す";
 }
 
 // --- サジェスト ---
 function showSuggestions(query) {
     const ul = document.getElementById("suggestions");
-    if (!membersData || !query) {
-        hideSuggestions();
-        return;
-    }
+    if (!membersData || !query) { hideSuggestions(); return; }
 
-    const names = Object.keys(membersData.members)
-        .filter(n => n.includes(query))
-        .slice(0, 10);
+    const names = Object.keys(membersData.members).filter(n => n.includes(query)).slice(0, 5);
+    const songItems = (songIndex && query.length >= 2)
+        ? songIndex.filter(s => s.title.includes(query) || s.artist.includes(query)).slice(0, 4)
+        : [];
 
-    if (names.length === 0) {
-        hideSuggestions();
-        return;
-    }
+    if (names.length === 0 && songItems.length === 0) { hideSuggestions(); return; }
 
-    ul.innerHTML = names.map(n =>
-        `<li onclick="searchMember('${escapeHtml(n)}')">${escapeHtml(n)}</li>`
-    ).join("");
+    ul.innerHTML = [
+        ...names.map(n => `<li onclick="searchMember('${escapeHtml(n)}')">${escapeHtml(n)} <span style="color:#aaa;font-size:0.75rem">メンバー</span></li>`),
+        ...songItems.map(s => `<li onclick="showSongDetail('${escapeAttr(s.title)}', '${escapeAttr(s.artist)}')">${escapeHtml(s.title)} <span style="color:#aaa;font-size:0.75rem">/ ${escapeHtml(s.artist)}</span></li>`),
+    ].join("");
     ul.classList.remove("hidden");
 }
 
@@ -579,6 +906,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.add("active");
             document.querySelectorAll(".tab-content").forEach(s => s.classList.remove("active"));
             document.getElementById(btn.dataset.tab).classList.add("active");
+            currentView = { type: "tab", tab: btn.dataset.tab };
         });
     });
 
@@ -588,6 +916,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll(".ranking-tab").forEach(t => t.classList.remove("active"));
             btn.classList.add("active");
             renderRanking(btn.dataset.ranking);
+            currentView = { type: "tab", tab: "rankings", rankingTab: btn.dataset.ranking };
         });
     });
 
