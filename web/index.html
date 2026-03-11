@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>軽音サークル 演奏統計</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="css/style.css?v=1.1.2">
+</head>
+<body>
+    <!-- ログイン画面 -->
+    <div id="login-screen" class="hidden">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-icon">&#9835;</div>
+                <h1>軽音サークル 演奏統計</h1>
+                <p class="login-subtitle">メンバー専用ツール</p>
+                <div class="login-form">
+                    <input type="password" id="password-input" placeholder="パスワードを入力" autocomplete="off">
+                    <button id="login-btn">ログイン</button>
+                </div>
+                <p id="login-error" class="login-error hidden">パスワードが違います</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div id="app-content" class="hidden">
+        <header>
+            <h1>軽音サークル 演奏統計</h1>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="名前を入力して検索..." autocomplete="off">
+                <ul id="suggestions" class="suggestions hidden"></ul>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="overview">全体統計</button>
+            <button class="tab" data-tab="rankings">ランキング</button>
+            <button class="tab" data-tab="search-result">検索結果</button>
+        </nav>
+
+        <main>
+            <!-- 全体統計 -->
+            <section id="overview" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-videos">-</div>
+                        <div class="stat-label">動画数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-members">-</div>
+                        <div class="stat-label">メンバー数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-songs">-</div>
+                        <div class="stat-label">総演奏曲数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-artists">-</div>
+                        <div class="stat-label">アーティスト数</div>
+                    </div>
+                </div>
+
+                <!-- ページ情報 -->
+                <div class="info-card">
+                    <h3 class="info-card-title">軽音サークル 演奏統計について</h3>
+                    <p>このツールは軽音サークルのYouTubeプレイリストにある動画の概要欄を解析し、演奏統計を自動集計しています。</p>
+                    <p>全58プレイリストを解析対象としています。</p>
+                    <dl class="info-list">
+                        <dt>データ抽出方法</dt>
+                        <dd>YouTube動画の概要欄からプログラムで自動抽出しています。手動入力ではないため、誤りがある場合があります。</dd>
+                        <dt>表記揺れの統合</dt>
+                        <dd>同一人物の表記揺れ（旧字体、ニックネーム等）は可能な限り統合しています。</dd>
+                        <dt>プライバシー</dt>
+                        <dd>このページはメンバー専用です。検索エンジンにはインデックスされません。</dd>
+                        <dt>技術構成</dt>
+                        <dd>Python + JavaScript (static site)</dd>
+                    </dl>
+                    <p class="info-note">一部のライブ（2月ライブ、2月POP合同等）は動画概要欄にセットリストが記載されていないため、データが取得できていません。</p>
+                    <p class="info-note">情報をお持ちの方は、ぜひご提供ください！より正確な統計を目指しています。</p>
+                    <p class="info-note">情報の誤りや追加データがある方は管理者にご連絡ください。</p>
+                </div>
+
+                <!-- ランキング機能ガイド -->
+                <div class="info-card">
+                    <h3 class="info-card-title">ランキング機能ガイド</h3>
+                    <dl class="info-list">
+                        <dt>バンド数 / 曲数</dt>
+                        <dd>出演バンド数・演奏曲数の多い人ランキング。</dd>
+                        <dt>多様性</dt>
+                        <dd>何種類のアーティストの曲を演奏したか。幅広いジャンルに挑戦している人が上位に。</dd>
+                        <dt>人気曲 / 人気アーティスト</dt>
+                        <dd>演奏回数の多い曲・アーティスト。タップで詳細表示。</dd>
+                        <dt>ベストコンビ</dt>
+                        <dd>同じバンドで共演した回数が多いペア。</dd>
+                        <dt>視聴回数 / 視聴回数メンバー</dt>
+                        <dd>YouTube動画の再生回数が多い演奏と、その出演者の累計視聴回数。</dd>
+                        <dt>トリ率</dt>
+                        <dd>イベントの最後のバンド（トリ）を務めた割合。</dd>
+                        <dt>交流度</dt>
+                        <dd>共演したユニークな人数。多くの人とバンドを組んでいる人が上位に。</dd>
+                        <dt>イベント一覧</dt>
+                        <dd>各プレイリスト（ライブイベント）の統計。タップでYouTubeプレイリストへ。</dd>
+                        <dt>パート別</dt>
+                        <dd>パートごとの出演回数と担当メンバー一覧。タップで展開。</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <!-- ランキング -->
+            <section id="rankings" class="tab-content">
+                <div class="ranking-tabs">
+                    <button class="ranking-tab active" data-ranking="band">バンド数</button>
+                    <button class="ranking-tab" data-ranking="song">曲数</button>
+                    <button class="ranking-tab" data-ranking="diversity">多様性</button>
+                    <button class="ranking-tab" data-ranking="popular-songs">人気曲</button>
+                    <button class="ranking-tab" data-ranking="popular-artists">人気アーティスト</button>
+                    <button class="ranking-tab" data-ranking="pairs">ベストコンビ</button>
+                    <button class="ranking-tab" data-ranking="most-viewed">視聴回数</button>
+                    <button class="ranking-tab" data-ranking="view-count-members">視聴回数メンバー</button>
+                    <button class="ranking-tab" data-ranking="tori">トリ率</button>
+                    <button class="ranking-tab" data-ranking="collaboration">交流度</button>
+                    <button class="ranking-tab" data-ranking="events">イベント一覧</button>
+                    <button class="ranking-tab" data-ranking="parts">パート別</button>
+                </div>
+                <div id="ranking-content"></div>
+            </section>
+
+            <!-- 検索結果 -->
+            <section id="search-result" class="tab-content">
+                <div id="search-placeholder" class="placeholder">
+                    名前を入力して検索してください
+                </div>
+                <div id="member-detail" class="hidden"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.1.0</p>
+
+            <details class="changelog">
+                <summary>更新履歴</summary>
+                <dl class="changelog-list">
+                    <dt>v1.1.0 (2026-03-11)</dt>
+                    <dd>
+                        <ul>
+                            <li>交流度ランキング追加（共演したユニーク人数）</li>
+                            <li>各ランキングに算出方法の説明を追加</li>
+                            <li>アーティスト名タップでそのアーティストの曲一覧・演奏動画を表示</li>
+                            <li>曲名タップでその曲の全演奏動画一覧を表示</li>
+                            <li>イベント名タップでYouTubeプレイリストへリンク</li>
+                            <li>パート別ランキングのパートをタップでメンバー一覧を展開（最高学年順）</li>
+                            <li>ログイン後のタイトルをサークル名に変更</li>
+                            <li>アーティスト名の表記揺れ統一（100件以上：壊れた括弧・スペル違い・重複等）</li>
+                            <li>メンバー名のゴミデータ修正（ドット・数字漏れ・二重学年・非公開接頭辞・同一人物統合等）</li>
+                            <li>全体統計ページにランキング機能の概要ガイドを追加</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.0.0 (2026-03-11)</dt>
+                    <dd>
+                        <ul>
+                            <li>初回リリース</li>
+                            <li>全58プレイリスト対応</li>
+                            <li>バンド数/曲数/多様性/人気曲/人気アーティスト/ベストコンビ/視聴回数/視聴回数メンバー/トリ率/イベント一覧/パート別 ランキング</li>
+                            <li>メンバー検索・詳細表示</li>
+                            <li>名前の表記揺れ統合（旧字体、ニックネーム等）</li>
+                        </ul>
+                    </dd>
+                </dl>
+            </details>
+        </footer>
+    </div>
+
+    <script src="js/auth.js?v=1.1.2"></script>
+    <script src="js/app.js?v=1.1.2"></script>
+</body>
+</html>

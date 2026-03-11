@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+*.egg-info/
+.pytest_cache/
+.DS_Store
+
+# 個人情報を含むデータ
+data/raw/
+data/parsed/
+data/name_aliases.json
+web/data/
+output/
+
+# サークル固有情報
+playlist_URL.md
+
+# 認証情報
+web/js/auth.js
+web/data/config.json
+
+# テスト（実名を含む）
+tests/
