@@ -527,23 +527,41 @@ function _showArtistDetailNoHistory(artist) {
     const placeholder = document.getElementById("search-placeholder");
     placeholder.classList.add("hidden");
     detail.classList.remove("hidden");
-    // アーティスト連鎖マップ
+    // アーティスト連鎖マップ & メンバーランキング
     let chainHtml = "";
-    if (membersData) {
-        const memberNames = new Set(matches.flatMap(v => (v.members || []).map(m => m.name)));
+    let memberRankHtml = "";
+    if (membersData?.members) {
         const chainCount = {};
-        for (const mname of memberNames) {
-            const m = membersData.members[mname];
-            if (!m) continue;
-            for (const [a, c] of Object.entries(m.artist_stats || {})) {
-                if (a === artist) continue;
-                chainCount[a] = (chainCount[a] || 0) + c;
+        const memberRanks = [];
+        for (const [mname, m] of Object.entries(membersData.members)) {
+            const cnt = m.artist_stats?.[artist];
+            if (cnt > 0) {
+                memberRanks.push([mname, cnt]);
+                for (const [a, c] of Object.entries(m.artist_stats || {})) {
+                    if (a === artist) continue;
+                    chainCount[a] = (chainCount[a] || 0) + c;
+                }
             }
         }
         const topChain = Object.entries(chainCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
         chainHtml = topChain.map(([a, c]) =>
             `<span class="artist-tag clickable" onclick="showArtistDetail('${escapeAttr(a)}')">${escapeHtml(a)} <span class="count">(${c})</span></span>`
         ).join("");
+
+        memberRanks.sort((a, b) => b[1] - a[1]);
+        if (memberRanks.length > 0) {
+            const LIMIT = 5;
+            const uid = `mr-${artist.replace(/[^a-zA-Z0-9]/g, "_")}`;
+            const rows = memberRanks.map(([n, c], i) => {
+                const cls = i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : "";
+                const hidden = i >= LIMIT ? ` class="hidden" data-more="${uid}"` : "";
+                return `<tr${hidden}><td class="rank-num ${cls}">${i + 1}</td><td class="clickable" onclick="showMemberDetail('${escapeAttr(n)}')">${escapeHtml(n)}</td><td>${c}回</td></tr>`;
+            }).join("");
+            const moreBtn = memberRanks.length > LIMIT
+                ? `<button class="more-btn" data-label="さらに表示（${memberRanks.length - LIMIT}人）" onclick="showMoreRows('${uid}',this)">さらに表示（${memberRanks.length - LIMIT}人）</button>`
+                : "";
+            memberRankHtml = `<table class="ranking-table"><thead><tr><th>順位</th><th>メンバー</th><th>回数</th></tr></thead><tbody>${rows}</tbody></table>${moreBtn}`;
+        }
     }
 
     detail.innerHTML = `
@@ -555,6 +573,7 @@ function _showArtistDetailNoHistory(artist) {
                 <span>曲数 <strong>${songSet.size}</strong></span>
             </div>
         </div>
+        ${memberRankHtml ? `<h3 class="section-title">演奏回数ランキング</h3>${memberRankHtml}` : ""}
         ${chainHtml ? `<h3 class="section-title">このアーティストを演奏した人がよく演奏するアーティスト</h3><div class="artist-list">${chainHtml}</div>` : ""}
         <h3 class="section-title">演奏された曲</h3>
         ${songList || '<div class="placeholder">データなし</div>'}
@@ -884,6 +903,16 @@ function hideSuggestions() {
 }
 
 // --- ユーティリティ ---
+function showMoreRows(uid, btn) {
+    document.querySelectorAll(`[data-more="${uid}"]`).forEach(el => el.classList.remove("hidden"));
+    btn.textContent = "閉じる";
+    btn.onclick = () => {
+        document.querySelectorAll(`[data-more="${uid}"]`).forEach(el => el.classList.add("hidden"));
+        btn.textContent = btn.dataset.label;
+        btn.onclick = () => showMoreRows(uid, btn);
+    };
+}
+
 function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
