@@ -16,6 +16,8 @@ WEB_DATA_DIR = PROJECT_ROOT / "web" / "data"
 # 名前エイリアスファイル
 NAME_ALIASES_FILE = DATA_DIR / "name_aliases.json"
 ARTIST_ALIASES_FILE = DATA_DIR / "artist_aliases.json"
+VIDEO_MERGES_FILE = DATA_DIR / "video_merges.json"
+VIDEO_OVERRIDES_FILE = DATA_DIR / "video_overrides.json"
 
 
 def get_playlist_url() -> str:
@@ -27,6 +29,18 @@ def get_playlist_url() -> str:
             ".env ファイルまたは環境変数で設定してください。"
         )
     return url
+
+
+def get_youtube_api_key() -> str:
+    """環境変数から YouTube Data API キーを取得"""
+    key = os.environ.get("YOUTUBE_API_KEY", "")
+    if not key:
+        raise ValueError(
+            "YOUTUBE_API_KEY が設定されていません。"
+            ".env ファイルまたは環境変数で設定してください。"
+            "\nGoogle Cloud Console で取得: https://console.cloud.google.com/apis/credentials"
+        )
+    return key
 
 
 def get_cookie_option() -> dict:

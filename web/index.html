@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CrossOverデータベース</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="css/style.css?v=1.6.3">
+    <link rel="stylesheet" href="css/style.css?v=1.7.2">
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -40,6 +40,8 @@
             <button class="tab" data-tab="rankings">ランキング</button>
             <button class="tab" data-tab="search-result">検索結果</button>
             <button class="tab" data-tab="board">掲示板</button>
+            <!-- 管理タブ: 必要時にコメント解除 -->
+            <!-- <button class="tab" data-tab="admin-tab">管理</button> -->
         </nav>
 
         <main>
@@ -179,14 +181,96 @@
                 </div>
                 <div id="board-posts"></div>
             </section>
+            <!-- 管理（認証後のみ表示） -->
+            <section id="admin-tab" class="tab-content">
+                <div id="admin-login-gate">
+                    <div class="admin-login-box">
+                        <h3>管理者認証</h3>
+                        <p class="admin-login-desc">管理者パスワードを入力してください</p>
+                        <div class="admin-login-form">
+                            <input type="password" id="admin-password" placeholder="管理者パスワード" autocomplete="off" onkeydown="if(event.key==='Enter')handleAdminLogin()">
+                            <button id="admin-login-btn" onclick="handleAdminLogin()">認証</button>
+                        </div>
+                        <p id="admin-login-error" class="login-error hidden">パスワードが違います</p>
+                    </div>
+                </div>
+                <div id="admin-panel" class="hidden">
+                    <div class="admin-section">
+                        <h3>動画URLから情報取得</h3>
+                        <p class="admin-desc">YouTube動画のURLを入力すると、概要欄を自動取得してパース結果を表示します。</p>
+                        <div class="admin-input-row">
+                            <input type="text" id="admin-video-url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+                            <button id="admin-fetch-btn">取得</button>
+                        </div>
+                        <p id="admin-fetch-status" class="admin-status hidden"></p>
+                    </div>
+                    <div id="admin-result" class="hidden">
+                        <div class="admin-section">
+                            <h3>動画情報</h3>
+                            <div class="admin-video-info">
+                                <div><span class="admin-label">タイトル:</span> <span id="admin-title"></span></div>
+                                <div><span class="admin-label">動画ID:</span> <span id="admin-vid" class="mono"></span></div>
+                                <div><span class="admin-label">投稿日:</span> <span id="admin-date"></span></div>
+                                <div><span class="admin-label">再生回数:</span> <span id="admin-views"></span></div>
+                            </div>
+                        </div>
+                        <div class="admin-section">
+                            <h3>概要欄</h3>
+                            <pre id="admin-desc-box" class="admin-desc-box"></pre>
+                        </div>
+                        <div class="admin-section">
+                            <h3>パース結果 <span id="admin-parse-badge" class="admin-badge"></span></h3>
+                            <h4>曲目 (<span id="admin-song-count">0</span>曲)</h4>
+                            <table class="admin-edit-table"><thead><tr><th>#</th><th>曲名</th><th>アーティスト</th><th></th></tr></thead><tbody id="admin-songs-body"></tbody></table>
+                            <button class="admin-btn-small" id="admin-add-song">+ 曲を追加</button>
+                            <h4>メンバー (<span id="admin-member-count">0</span>人)</h4>
+                            <table class="admin-edit-table"><thead><tr><th>学年</th><th>パート</th><th>名前</th><th></th></tr></thead><tbody id="admin-members-body"></tbody></table>
+                            <button class="admin-btn-small" id="admin-add-member">+ メンバーを追加</button>
+                            <div id="admin-warnings" class="hidden">
+                                <h4>パース警告</h4>
+                                <ul id="admin-warnings-list" class="admin-warnings"></ul>
+                            </div>
+                        </div>
+                        <div class="admin-section">
+                            <h3>エクスポート</h3>
+                            <p class="admin-desc">修正内容を video_overrides.json のエントリとして出力します。</p>
+                            <button id="admin-export-btn">JSONを生成</button>
+                            <button id="admin-copy-btn" class="hidden">コピー</button>
+                            <pre id="admin-export-output" class="admin-json-output hidden"></pre>
+                        </div>
+                    </div>
+                    <div class="admin-section">
+                        <h3>YouTube API設定</h3>
+                        <div class="admin-input-row">
+                            <input type="password" id="admin-api-key" placeholder="APIキー (AIzaSy...)" autocomplete="off">
+                            <button id="admin-save-key">保存</button>
+                            <button id="admin-test-key">テスト</button>
+                        </div>
+                        <p id="admin-key-status" class="admin-status"></p>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.6.3</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.7.2</p>
+            <p class="visitor-count">今日の訪問者: <span id="visitor-today">-</span>人 ／ 昨日: <span id="visitor-yesterday">-</span>人</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v1.7.2 (2026-03-14)</dt>
+                    <dd>
+                        <ul>
+                            <li>今日の訪問者数・昨日の訪問者数をフッターに表示</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.7.0 (2026-03-13)</dt>
+                    <dd>
+                        <ul>
+                            <li>掲示板をサーバー共有化（全ユーザーの投稿が共有されます）</li>
+                        </ul>
+                    </dd>
                     <dt>v1.6.3 (2026-03-13)</dt>
                     <dd>
                         <ul>
@@ -303,6 +387,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="js/auth.js?v=1.4.0"></script>
-    <script src="js/app.js?v=1.6.3"></script>
+    <script src="js/app.js?v=1.7.2"></script>
 </body>
 </html>

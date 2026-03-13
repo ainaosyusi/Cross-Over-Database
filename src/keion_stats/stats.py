@@ -5,7 +5,7 @@ import re
 from collections import Counter, defaultdict
 from itertools import combinations
 
-from .config import ARTIST_ALIASES_FILE
+from .config import ARTIST_ALIASES_FILE, DATA_DIR
 from .models import MemberSummary, ParsedVideo, Song, Rankings
 
 
@@ -97,6 +97,7 @@ class StatsCalculator:
             bands=band_details,
             co_member_stats=self._calc_co_members(name, bands),
             artist_stats=self._calc_artist_stats(bands),
+            genre_distribution=self._calc_genre_distribution(bands),
         )
 
     def _calc_co_members(self, name: str, bands: list[ParsedVideo]) -> dict[str, int]:
@@ -115,6 +116,21 @@ class StatsCalculator:
             for s in v.songs:
                 counter[s.artist] += 1
         return dict(counter.most_common())
+
+    def _calc_genre_distribution(self, bands: list[ParsedVideo]) -> dict[str, int]:
+        """ジャンル別演奏回数"""
+        genre_map_path = DATA_DIR / "genre_map.json"
+        if not genre_map_path.exists():
+            return {}
+        with open(genre_map_path, encoding="utf-8") as f:
+            genre_map = json.load(f)
+        counter: Counter[str] = Counter()
+        for v in bands:
+            for s in v.songs:
+                genre = genre_map.get(s.artist)
+                if genre:
+                    counter[genre] += 1
+        return dict(counter)
 
     def all_rankings(self) -> Rankings:
         """全ランキングを計算"""

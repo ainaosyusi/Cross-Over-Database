@@ -41,6 +41,7 @@ class MemberSummary:
     bands: list[dict]  # 各バンドの詳細情報
     co_member_stats: dict[str, int]  # 共演者名→共演回数
     artist_stats: dict[str, int]  # アーティスト名→演奏回数
+    genre_distribution: dict[str, int] = None  # ジャンル→演奏回数
 
 
 @dataclass

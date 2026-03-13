@@ -9,7 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from keion_stats.config import OUTPUT_DIR, RAW_DIR, WEB_DATA_DIR
+from keion_stats.config import OUTPUT_DIR, RAW_DIR, VIDEO_MERGES_FILE, VIDEO_OVERRIDES_FILE, WEB_DATA_DIR
+from keion_stats.models import Member, Song
 from keion_stats.excel_export import export_excel
 from keion_stats.json_export import export_json
 from keion_stats.parser import parse_all
@@ -49,6 +50,38 @@ def main():
                 print(f"\n--- {v.title} ({v.video_id}) ---")
                 for w in v.parse_warnings:
                     print(f"  {w}")
+
+    # 手動データ上書き処理
+    if VIDEO_OVERRIDES_FILE.exists():
+        with open(VIDEO_OVERRIDES_FILE, encoding="utf-8") as f:
+            overrides = {o["video_id"]: o for o in json.load(f)}
+        for v in parsed:
+            if v.video_id in overrides:
+                o = overrides[v.video_id]
+                if "songs" in o:
+                    v.songs = [Song(title=s["title"], artist=s["artist"]) for s in o["songs"]]
+                if "members" in o:
+                    v.members = [Member(grade=m["grade"], name=m["name"], part=m.get("part", "")) for m in o["members"]]
+        print(f"上書き処理: {len(overrides)}件")
+
+    # 分割動画マージ処理
+    if VIDEO_MERGES_FILE.exists():
+        with open(VIDEO_MERGES_FILE, encoding="utf-8") as f:
+            merges = json.load(f)
+        secondary_ids = {m["secondary"] for m in merges}
+        secondary_url_map = {m["primary"]: m["secondary"] for m in merges}
+        # セカンダリを除外し、プライマリにsecondary_urlを付与
+        filtered = []
+        for v in parsed:
+            if v.video_id in secondary_ids:
+                continue
+            if v.video_id in secondary_url_map:
+                v.secondary_url = f"https://www.youtube.com/watch?v={secondary_url_map[v.video_id]}"
+            else:
+                v.secondary_url = None
+            filtered.append(v)
+        parsed = filtered
+        print(f"マージ処理: {len(merges)}ペア統合 ({len(secondary_ids)}動画を除外)")
 
     # 統計計算
     calc = StatsCalculator(parsed, raw_videos=raw_videos)

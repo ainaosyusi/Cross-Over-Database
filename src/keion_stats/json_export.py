@@ -26,8 +26,11 @@ def export_json(
             {
                 "video_id": v.video_id,
                 "url": v.url,
+                "secondary_url": getattr(v, "secondary_url", None),
                 "title": v.title,
                 "date": v.date.isoformat() if v.date else None,
+                "event_name": calculator._playlist_titles.get(v.video_id, ""),
+                "playlist_id": calculator._playlist_ids.get(v.video_id, ""),
                 "songs": [{"title": s.title, "artist": s.artist} for s in v.songs],
                 "band_name": v.band_name,
                 "members": [{"grade": m.grade, "name": m.name, "part": m.part} for m in v.members],
@@ -55,6 +58,7 @@ def export_json(
             "bands": s.bands,
             "co_member_stats": s.co_member_stats,
             "artist_stats": s.artist_stats,
+            "genre_distribution": s.genre_distribution or {},
         }
     _write_json(output_dir / "members.json", members_data)
 
