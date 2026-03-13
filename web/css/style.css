@@ -470,10 +470,10 @@ footer {
 .no-data-notice {
     margin-top: 0.5rem;
     padding: 0.6rem 1rem;
-    background: #fff3cd;
-    border: 1px solid #ffc107;
+    background: #fde8e8;
+    border: 1px solid #e53e3e;
     border-radius: var(--radius);
-    color: #856404;
+    color: #c53030;
     font-size: 0.85rem;
     line-height: 1.5;
 }

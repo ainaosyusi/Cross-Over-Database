@@ -247,7 +247,7 @@ function renderEventList(events) {
         <div class="band-card">
             <div class="band-date">${escapeHtml(e.date || "日付不明")}</div>
             <div class="member-name clickable" style="font-size:1.1rem;margin:0.3rem 0" onclick="showEventDetail('${escapeAttr(e.event)}')">${escapeHtml(e.event)}</div>
-            ${noData ? `<div class="no-data-notice">セトリ不明および動画概要欄の情報欠損により情報取得不可能（情報提供者待ってます）</div>` : `
+            ${noData ? `<div class="no-data-notice">概要欄無記入につき、情報不足</div>` : `
             <div class="member-stats" style="font-size:0.85rem">
                 <span>バンド数 <strong>${e.bands}</strong></span>
                 <span>曲数 <strong>${e.songs}</strong></span>
@@ -977,7 +977,7 @@ function renderEventsTab(fiscalYear) {
             <div class="band-date">${escapeHtml(e.date || "日付不明")}</div>
             <div class="member-name clickable" style="font-size:1.1rem;margin:0.3rem 0" onclick="showEventDetail('${escapeAttr(e.event)}')">${escapeHtml(e.event)}</div>
             ${thumbHtml}
-            ${noData ? `<div class="no-data-notice">セトリ不明および動画概要欄の情報欠損により情報取得不可能（情報提供者待ってます）</div>` : `
+            ${noData ? `<div class="no-data-notice">概要欄無記入につき、情報不足</div>` : `
             <div class="member-stats" style="font-size:0.85rem">
                 <span>バンド数 <strong>${e.bands}</strong></span>
                 <span>曲数 <strong>${e.songs}</strong></span>
