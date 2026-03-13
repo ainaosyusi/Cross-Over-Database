@@ -1,0 +1,8 @@
+# 個人情報を含むファイル — コミット禁止
+data/department_map.json
+data/video_overrides.json
+data/video_merges.json
+data/name_aliases.json
+data/raw/
+web/data/
+web/js/auth.js

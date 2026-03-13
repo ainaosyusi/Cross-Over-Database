@@ -1,36 +1,56 @@
 #!/bin/bash
-# === 個人情報保護フック ===
-# コミットに個人情報ファイルが含まれていたらブロックする
-
-BLOCKED_FILES=(
-  "data/department_map.json"
-  "data/video_overrides.json"
-  "data/video_merges.json"
-  "data/name_aliases.json"
-  "data/raw/"
-  "web/data/"
-  "web/js/auth.js"
-)
+# === pre-commit フック（個人情報・機密ファイル保護）===
 
 STAGED=$(git diff --cached --name-only)
 BLOCKED=""
 
-for file in "${BLOCKED_FILES[@]}"; do
-  match=$(echo "$STAGED" | grep "^${file}")
+# --- 1. 一般的な機密ファイルパターン ---
+SENSITIVE_PATTERNS=(
+  "\.env$"
+  "\.env\."
+  "credentials"
+  "secret"
+  "\.pem$"
+  "\.key$"
+  "id_rsa"
+)
+
+for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+  match=$(echo "$STAGED" | grep -iE "$pattern")
   if [ -n "$match" ]; then
     BLOCKED="${BLOCKED}\n  - ${match}"
   fi
 done
 
+# --- 2. プロジェクト固有ブロックリスト ---
+BLOCKLIST=".git-blocked-files"
+if [ -f "$BLOCKLIST" ]; then
+  while IFS= read -r line; do
+    [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+    match=$(echo "$STAGED" | grep "^${line}")
+    if [ -n "$match" ]; then
+      BLOCKED="${BLOCKED}\n  - ${match}"
+    fi
+  done < "$BLOCKLIST"
+fi
+
+# --- 3. グローバルフックがあれば実行 ---
+GLOBAL_HOOK="$HOME/.githooks/pre-commit"
+if [ -x "$GLOBAL_HOOK" ] && [ "$(realpath "$0")" != "$(realpath "$GLOBAL_HOOK")" ]; then
+  "$GLOBAL_HOOK"
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+fi
+
 if [ -n "$BLOCKED" ]; then
   echo ""
   echo "============================================"
-  echo "  BLOCKED: 個人情報ファイルのコミットを検出"
+  echo "  BLOCKED: 機密/個人情報ファイルを検出"
   echo "============================================"
-  echo -e "以下のファイルは個人情報を含むためコミットできません:${BLOCKED}"
+  echo -e "以下のファイルはコミットできません:${BLOCKED}"
   echo ""
-  echo "意図的な場合は git commit --no-verify で回避可能ですが、"
-  echo "GitHub にプッシュしないでください。"
+  echo "誤検知の場合: git commit --no-verify"
   echo "============================================"
   exit 1
 fi
