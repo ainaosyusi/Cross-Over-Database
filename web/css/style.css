@@ -567,6 +567,144 @@ footer {
     .ranking-tabs { gap: 0.3rem; }
 }
 
+/* イベント一覧タブ */
+.event-filter {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.event-card-thumb {
+    width: 100%;
+    max-width: 320px;
+    border-radius: var(--radius);
+    margin: 0.5rem 0;
+    cursor: pointer;
+}
+.event-card-thumb:hover { opacity: 0.85; }
+
+/* 全体統計グラフ */
+.stats-charts-section {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 1rem 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.stats-charts-toggle {
+    cursor: pointer;
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 0.5rem 0;
+}
+.stats-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+@media (max-width: 600px) {
+    .stats-charts-grid { grid-template-columns: 1fr; }
+}
+.chart-card {
+    background: #f8fafd;
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+}
+.chart-card h4 {
+    font-size: 0.9rem;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+.chart-card canvas {
+    max-width: 100%;
+    max-height: 300px;
+}
+.genre-detail-section {
+    margin-top: 0.8rem;
+}
+.genre-detail-header {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.genre-detail-header:hover { background: #f0f3f8; }
+.genre-detail-artists {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding: 0.5rem 0;
+}
+
+/* 掲示板 */
+.board-header {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1rem;
+}
+.board-header h3 { font-size: 1.2rem; margin-bottom: 0.3rem; }
+.board-description { color: var(--text-muted); font-size: 0.85rem; }
+.board-form {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+}
+.board-form input, .board-form textarea {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 0.5rem;
+    resize: vertical;
+}
+.board-form input:focus, .board-form textarea:focus { border-color: var(--primary); }
+.board-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.board-char-count { font-size: 0.8rem; color: var(--text-muted); }
+#board-submit {
+    padding: 0.5rem 1.5rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+#board-submit:hover { background: var(--primary-light); }
+.board-error { color: #e53935; font-size: 0.85rem; margin-top: 0.5rem; }
+.board-post {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 0.8rem;
+    border-left: 3px solid var(--primary);
+}
+.board-post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.board-post-name { font-weight: bold; color: var(--primary); font-size: 0.95rem; }
+.board-post-date { font-size: 0.75rem; color: var(--text-muted); }
+.board-post-body { font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+
 /* ジャンルレーダーチャート */
 .genre-chart-wrap {
     display: flex;

@@ -130,6 +130,9 @@ async function loadData() {
         computeArtistGlobalTop();
         renderOverview();
         renderRanking("band");
+        buildEventYearFilter();
+        renderEventsTab(null);
+        renderBoardPosts();
         const generatedAt = rankings.generated_at
             ? rankings.generated_at.replace("T", " ").replace(/\+.*$|Z$/, "").replace(/\.\d+$/, "")
             : "-";
@@ -919,6 +922,187 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// --- イベント一覧タブ（年度フィルター+サムネイル） ---
+function getFiscalYear(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1; // 1-12
+    return m >= 4 ? y : y - 1; // 4月始まり
+}
+function buildEventYearFilter() {
+    const events = rankingsData?.event_stats || [];
+    const years = new Set();
+    for (const e of events) { const fy = getFiscalYear(e.date); if (fy) years.add(fy); }
+    const sorted = [...years].sort((a, b) => b - a);
+    const container = document.querySelector(".event-filter");
+    if (!container) return;
+    container.innerHTML = `<button class="ranking-tab active" onclick="filterEventsByYear('all', this)">すべて</button>` +
+        sorted.map(y => `<button class="ranking-tab" onclick="filterEventsByYear(${y}, this)">${y}年度</button>`).join("");
+}
+function filterEventsByYear(year, btn) {
+    document.querySelectorAll(".event-filter .ranking-tab").forEach(b => b.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+    renderEventsTab(year === "all" ? null : year);
+}
+function renderEventsTab(fiscalYear) {
+    const events = rankingsData?.event_stats || [];
+    const filtered = fiscalYear
+        ? events.filter(e => getFiscalYear(e.date) === fiscalYear)
+        : events;
+    const container = document.getElementById("events-list");
+    if (!filtered.length) { container.innerHTML = '<div class="placeholder">データなし</div>'; return; }
+    container.innerHTML = filtered.map(e => {
+        const noData = e.songs === 0 && e.members === 0;
+        const plUrl = e.playlist_id ? `https://www.youtube.com/playlist?list=${encodeURIComponent(e.playlist_id)}` : "";
+        // YouTubeサムネイル: プレイリスト内動画から取得
+        let thumbHtml = "";
+        if (e.playlist_id && videosData) {
+            const eventVids = videosData.videos.filter(v => v.event_name === e.event);
+            const firstVid = eventVids.find(v => v.url);
+            if (firstVid) {
+                const vidId = extractVideoId(firstVid.url);
+                if (vidId) {
+                    thumbHtml = `<img src="https://img.youtube.com/vi/${vidId}/mqdefault.jpg" alt="${escapeHtml(e.event)}" class="event-card-thumb" onclick="showEventDetail('${escapeAttr(e.event)}')">`;
+                }
+            }
+        }
+        return `
+        <div class="band-card">
+            <div class="band-date">${escapeHtml(e.date || "日付不明")}</div>
+            <div class="member-name clickable" style="font-size:1.1rem;margin:0.3rem 0" onclick="showEventDetail('${escapeAttr(e.event)}')">${escapeHtml(e.event)}</div>
+            ${thumbHtml}
+            ${noData ? `<div class="no-data-notice">セトリ不明および動画概要欄の情報欠損により情報取得不可能（情報提供者待ってます）</div>` : `
+            <div class="member-stats" style="font-size:0.85rem">
+                <span>バンド数 <strong>${e.bands}</strong></span>
+                <span>曲数 <strong>${e.songs}</strong></span>
+                <span>参加者 <strong>${e.members}人</strong></span>
+                <span>アーティスト <strong>${e.artists}</strong></span>
+                ${e.total_views ? `<span>総視聴 <strong>${e.total_views.toLocaleString()}回</strong></span>` : ""}
+            </div>`}
+            ${plUrl ? `<a href="${plUrl}" target="_blank" rel="noopener" class="band-link">YouTubeプレイリスト →</a>` : ""}
+        </div>`;
+    }).join("");
+}
+function extractVideoId(url) {
+    if (!url) return null;
+    const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+}
+
+// --- 掲示板 ---
+const BOARD_STORAGE_KEY = "keion_board_posts";
+function loadBoardPosts() {
+    try { return JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY) || "[]"); }
+    catch { return []; }
+}
+function saveBoardPosts(posts) {
+    localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(posts));
+}
+function renderBoardPosts() {
+    const posts = loadBoardPosts();
+    const container = document.getElementById("board-posts");
+    if (!container) return;
+    if (!posts.length) { container.innerHTML = '<div class="placeholder">まだ投稿がありません</div>'; return; }
+    container.innerHTML = posts.slice().reverse().map(p => `
+        <div class="board-post">
+            <div class="board-post-header">
+                <span class="board-post-name">${escapeHtml(p.name)}</span>
+                <span class="board-post-date">${p.date}</span>
+            </div>
+            <div class="board-post-body">${escapeHtml(p.content)}</div>
+        </div>
+    `).join("");
+}
+function submitBoardPost() {
+    const nameInput = document.getElementById("board-name");
+    const contentInput = document.getElementById("board-content");
+    const errorEl = document.getElementById("board-error");
+    const name = nameInput.value.trim();
+    const content = contentInput.value.trim();
+    errorEl.classList.add("hidden");
+    if (!name) { errorEl.textContent = "ニックネームを入力してください"; errorEl.classList.remove("hidden"); return; }
+    if (content.length < 10) { errorEl.textContent = "内容は10文字以上で入力してください"; errorEl.classList.remove("hidden"); return; }
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,"0")}/${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    const posts = loadBoardPosts();
+    posts.push({ name, content, date: dateStr });
+    saveBoardPosts(posts);
+    nameInput.value = "";
+    contentInput.value = "";
+    document.getElementById("board-char-count").textContent = "0/500";
+    renderBoardPosts();
+}
+
+// --- 全体統計グラフ描画 ---
+let genrePieRendered = false;
+function renderStatsCharts() {
+    if (genrePieRendered) return;
+    genrePieRendered = true;
+    renderGenrePieChart();
+    renderPartPieChart();
+    renderGenreArtistDetail();
+}
+function renderGenrePieChart() {
+    if (!rankingsData?.popular_artists) return;
+    const genreMap = {};
+    // genre_map.jsonはfetchしてキャッシュ
+    fetch("data/genre_map.json?v=" + Date.now()).then(r => r.json()).then(gm => {
+        for (const a of rankingsData.popular_artists) {
+            const genre = gm[a.artist] || "その他";
+            genreMap[genre] = (genreMap[genre] || 0) + a.song_count;
+        }
+        const labels = Object.keys(genreMap);
+        const data = Object.values(genreMap);
+        const colors = ["#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47", "#FF6384", "#9966FF"];
+        const ctx = document.getElementById("genre-pie-chart")?.getContext("2d");
+        if (!ctx) return;
+        new Chart(ctx, {
+            type: "doughnut",
+            data: { labels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length) }] },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } }
+        });
+    }).catch(() => {});
+}
+function renderPartPieChart() {
+    if (!rankingsData?.part_stats) return;
+    const top = rankingsData.part_stats.slice(0, 8);
+    const labels = top.map(p => p.part);
+    const data = top.map(p => p.unique_members);
+    const colors = ["#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47", "#FF6384", "#9966FF"];
+    const ctx = document.getElementById("part-pie-chart")?.getContext("2d");
+    if (!ctx) return;
+    new Chart(ctx, {
+        type: "doughnut",
+        data: { labels, datasets: [{ data, backgroundColor: colors }] },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } }
+    });
+}
+function renderGenreArtistDetail() {
+    fetch("data/genre_map.json?v=" + Date.now()).then(r => r.json()).then(gm => {
+        if (!rankingsData?.popular_artists) return;
+        const genreArtists = {};
+        for (const a of rankingsData.popular_artists) {
+            const genre = gm[a.artist] || "その他";
+            if (!genreArtists[genre]) genreArtists[genre] = [];
+            genreArtists[genre].push(a);
+        }
+        const container = document.getElementById("genre-artist-list");
+        if (!container) return;
+        const GENRES = ["邦ロック", "J-POP", "ボカロ/アニソン", "洋楽", "テクニカル", "昭和/歌謡曲", "パンク/ヘビー", "その他"];
+        container.innerHTML = GENRES.filter(g => genreArtists[g]).map(g => {
+            const artists = genreArtists[g].slice(0, 15);
+            const tags = artists.map(a =>
+                `<span class="artist-tag clickable" onclick="showArtistDetail('${escapeAttr(a.artist)}')">${escapeHtml(a.artist)} <span class="count">(${a.song_count})</span></span>`
+            ).join("");
+            return `<div class="genre-detail-section">
+                <div class="genre-detail-header" onclick="this.nextElementSibling.classList.toggle('hidden')">${escapeHtml(g)} (${genreArtists[g].length}組)</div>
+                <div class="genre-detail-artists hidden">${tags}</div>
+            </div>`;
+        }).join("");
+    }).catch(() => {});
+}
+
 // --- イベント ---
 document.addEventListener("DOMContentLoaded", () => {
     // auth.jsがある場合はそちらから初期化
@@ -936,8 +1120,27 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll(".tab-content").forEach(s => s.classList.remove("active"));
             document.getElementById(btn.dataset.tab).classList.add("active");
             currentView = { type: "tab", tab: btn.dataset.tab };
+            if (btn.dataset.tab === "board") renderBoardPosts();
+            if (btn.dataset.tab === "overview") {
+                const details = document.getElementById("stats-charts");
+                if (details?.open) renderStatsCharts();
+            }
         });
     });
+
+    // グラフ: detailsが開いたときに描画
+    const statsCharts = document.getElementById("stats-charts");
+    if (statsCharts) {
+        statsCharts.addEventListener("toggle", () => { if (statsCharts.open) renderStatsCharts(); });
+    }
+
+    // 掲示板文字数カウント
+    const boardContent = document.getElementById("board-content");
+    if (boardContent) {
+        boardContent.addEventListener("input", () => {
+            document.getElementById("board-char-count").textContent = `${boardContent.value.length}/500`;
+        });
+    }
 
     // ランキングサブタブ
     document.querySelectorAll(".ranking-tab").forEach(btn => {

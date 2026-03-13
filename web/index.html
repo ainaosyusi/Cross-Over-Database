@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>軽音サークル 演奏統計</title>
+    <title>CrossOverデータベース</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="css/style.css?v=1.5.3">
+    <link rel="stylesheet" href="css/style.css?v=1.6.0">
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -27,7 +27,7 @@
     <!-- メインコンテンツ -->
     <div id="app-content" class="hidden">
         <header>
-            <h1>軽音サークル 演奏統計</h1>
+            <h1>CrossOverデータベース</h1>
             <div class="search-box">
                 <input type="text" id="search-input" placeholder="名前を入力して検索..." autocomplete="off">
                 <ul id="suggestions" class="suggestions hidden"></ul>
@@ -36,8 +36,10 @@
 
         <nav class="tabs">
             <button class="tab active" data-tab="overview">全体統計</button>
+            <button class="tab" data-tab="events-tab">イベント一覧</button>
             <button class="tab" data-tab="rankings">ランキング</button>
-<button class="tab" data-tab="search-result">検索結果</button>
+            <button class="tab" data-tab="search-result">検索結果</button>
+            <button class="tab" data-tab="board">掲示板</button>
         </nav>
 
         <main>
@@ -62,9 +64,28 @@
                     </div>
                 </div>
 
+                <!-- 全体統計グラフ -->
+                <details class="stats-charts-section" id="stats-charts">
+                    <summary class="stats-charts-toggle">グラフで見る統計</summary>
+                    <div class="stats-charts-grid">
+                        <div class="chart-card">
+                            <h4>ジャンル割合</h4>
+                            <canvas id="genre-pie-chart" width="300" height="300"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>パート別人数割合</h4>
+                            <canvas id="part-pie-chart" width="300" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card" id="genre-artist-detail" style="margin-top:1rem">
+                        <h4>ジャンル別アーティスト詳細</h4>
+                        <div id="genre-artist-list"></div>
+                    </div>
+                </details>
+
                 <!-- ページ情報 -->
                 <div class="info-card">
-                    <h3 class="info-card-title">軽音サークル 演奏統計について</h3>
+                    <h3 class="info-card-title">CrossOverデータベースについて</h3>
                     <p>このツールは軽音サークルのYouTubeプレイリストにある動画の概要欄を解析し、演奏統計を自動集計しています。</p>
                     <p>全58プレイリストを解析対象としています。</p>
                     <dl class="info-list">
@@ -100,12 +121,18 @@
                         <dd>イベントの最後のバンド（トリ）を務めた割合。</dd>
                         <dt>交流度</dt>
                         <dd>共演したユニークな人数。多くの人とバンドを組んでいる人が上位に。</dd>
-                        <dt>イベント一覧</dt>
-                        <dd>各プレイリスト（ライブイベント）の統計。タップでYouTubeプレイリストへ。</dd>
                         <dt>パート別</dt>
                         <dd>パートごとの出演回数と担当メンバー一覧。タップで展開。</dd>
                     </dl>
                 </div>
+            </section>
+
+            <!-- イベント一覧 -->
+            <section id="events-tab" class="tab-content">
+                <div class="event-filter">
+                    <button class="ranking-tab active" data-year="all" onclick="filterEventsByYear('all', this)">すべて</button>
+                </div>
+                <div id="events-list"></div>
             </section>
 
             <!-- ランキング -->
@@ -121,7 +148,6 @@
                     <button class="ranking-tab" data-ranking="view-count-members">視聴回数メンバー</button>
                     <button class="ranking-tab" data-ranking="tori">トリ率</button>
                     <button class="ranking-tab" data-ranking="collaboration">交流度</button>
-                    <button class="ranking-tab" data-ranking="events">イベント一覧</button>
                     <button class="ranking-tab" data-ranking="parts">パート別</button>
                     <button class="ranking-tab" data-ranking="grade">学年別</button>
                     <button class="ranking-tab" data-ranking="debut">初出演</button>
@@ -136,14 +162,40 @@
                 </div>
                 <div id="member-detail" class="hidden"></div>
             </section>
+            <!-- 掲示板 -->
+            <section id="board" class="tab-content">
+                <div class="board-header">
+                    <h3>掲示板</h3>
+                    <p class="board-description">このデータベースについて意見・質問・要望・一言などお気軽にどうぞ！</p>
+                </div>
+                <div class="board-form">
+                    <input type="text" id="board-name" placeholder="ニックネーム" maxlength="20" autocomplete="off">
+                    <textarea id="board-content" placeholder="内容（10文字以上）" rows="3" maxlength="500"></textarea>
+                    <div class="board-form-footer">
+                        <span id="board-char-count" class="board-char-count">0/500</span>
+                        <button id="board-submit" onclick="submitBoardPost()">投稿する</button>
+                    </div>
+                    <p id="board-error" class="board-error hidden"></p>
+                </div>
+                <div id="board-posts"></div>
+            </section>
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.5.3</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.6.0</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v1.6.0 (2026-03-13)</dt>
+                    <dd>
+                        <ul>
+                            <li>サイト名を「CrossOverデータベース」に変更</li>
+                            <li>イベント一覧を独立タブに移動、YouTubeサムネイル表示・年度フィルター追加</li>
+                            <li>掲示板タブ追加（ニックネーム+内容投稿、投稿日時表示）</li>
+                            <li>全体統計にグラフ追加（ジャンル割合・パート別人数割合・ジャンル別アーティスト詳細）</li>
+                        </ul>
+                    </dd>
                     <dt>v1.5.3 (2026-03-12)</dt>
                     <dd>
                         <ul>
@@ -243,6 +295,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="js/auth.js?v=1.4.0"></script>
-    <script src="js/app.js?v=1.5.3"></script>
+    <script src="js/app.js?v=1.6.0"></script>
 </body>
 </html>
