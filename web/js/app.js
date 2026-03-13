@@ -7,6 +7,7 @@ let videosData = null;
 let songIndex = null;
 let debutData = null;
 let rankingGradeFilter = null;
+let departmentMap = null;
 
 // --- グレードヘルパー ---
 const GRADE_ORDER_LIST = ["1", "2", "3", "4", "M1", "M2", "B1", "B2"];
@@ -116,14 +117,16 @@ function backButton() {
 async function loadData() {
     try {
         const cacheBust = "?v=" + Date.now();
-        const [members, rankings, videos] = await Promise.all([
+        const [members, rankings, videos, deptMap] = await Promise.all([
             fetch("data/members.json" + cacheBust).then(r => r.json()),
             fetch("data/rankings.json" + cacheBust).then(r => r.json()),
             fetch("data/videos.json" + cacheBust).then(r => r.json()),
+            fetch("data/department_map.json" + cacheBust).then(r => r.json()).catch(() => null),
         ]);
         membersData = members;
         rankingsData = rankings;
         videosData = videos;
+        departmentMap = deptMap?.members || null;
 
         buildSongIndex();
         computeDebutData();
@@ -794,10 +797,12 @@ function showMemberDetail(name) {
     const hasGenreData = GENRES.some(g => genreDist[g] > 0);
     const genreChartId = `genre-chart-${name.replace(/[^a-zA-Z0-9]/g, "_")}`;
 
+    const deptInfo = departmentMap?.[name];
     detail.innerHTML = `
         ${backButton()}
         <div class="member-header">
             <div class="member-name">${escapeHtml(name)}</div>
+            ${deptInfo ? `<div class="dept-label">${escapeHtml(deptInfo)}</div>` : ""}
             <div class="member-stats">
                 <span>バンド数 <strong>${member.total_bands}</strong></span>
                 <span>曲数 <strong>${member.total_songs}</strong></span>
