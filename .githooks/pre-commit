@@ -1,0 +1,36 @@
+#!/bin/bash
+# === 個人情報保護フック ===
+# コミットに個人情報ファイルが含まれていたらブロックする
+
+BLOCKED_FILES=(
+  "data/department_map.json"
+  "data/video_overrides.json"
+  "data/video_merges.json"
+  "data/name_aliases.json"
+  "data/raw/"
+  "web/data/"
+  "web/js/auth.js"
+)
+
+STAGED=$(git diff --cached --name-only)
+BLOCKED=""
+
+for file in "${BLOCKED_FILES[@]}"; do
+  match=$(echo "$STAGED" | grep "^${file}")
+  if [ -n "$match" ]; then
+    BLOCKED="${BLOCKED}\n  - ${match}"
+  fi
+done
+
+if [ -n "$BLOCKED" ]; then
+  echo ""
+  echo "============================================"
+  echo "  BLOCKED: 個人情報ファイルのコミットを検出"
+  echo "============================================"
+  echo -e "以下のファイルは個人情報を含むためコミットできません:${BLOCKED}"
+  echo ""
+  echo "意図的な場合は git commit --no-verify で回避可能ですが、"
+  echo "GitHub にプッシュしないでください。"
+  echo "============================================"
+  exit 1
+fi
