@@ -52,11 +52,27 @@ if (!in_array($ipHash, $data[$today])) {
     saveData($data);
 }
 
+// 累計カウンター（別ファイルで永続化）
+$totalFile = __DIR__ . '/counter_total.json';
+$totalData = file_exists($totalFile) ? json_decode(file_get_contents($totalFile), true) : ['total' => 308, 'counted' => []];
+if (!is_array($totalData)) $totalData = ['total' => 308, 'counted' => []];
+
+// 全期間で未カウントのIPハッシュなら累計に加算
+$ipHashTotal = substr(hash('sha256', $ip . 'total'), 0, 16);
+if (!in_array($ipHashTotal, $totalData['counted'])) {
+    $totalData['total']++;
+    $totalData['counted'][] = $ipHashTotal;
+    // counted配列が肥大化しないよう最新5000件のみ保持
+    if (count($totalData['counted']) > 5000) {
+        $totalData['counted'] = array_slice($totalData['counted'], -5000);
+    }
+    file_put_contents($totalFile, json_encode($totalData));
+}
+
 // レスポンス
 $todayCount = count($data[$today]);
-$yesterdayCount = isset($data[date('Y-m-d', strtotime('-1 day'))]) ? count($data[date('Y-m-d', strtotime('-1 day'))]) : 0;
 
 echo json_encode([
     'today' => $todayCount,
-    'yesterday' => $yesterdayCount,
+    'total' => $totalData['total'],
 ]);

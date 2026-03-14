@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CrossOverデータベース</title>
-    <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="css/style.css?v=1.7.2">
+    <title>軽音サークル 演奏統計データベース</title>
+    <meta name="description" content="軽音サークルの演奏統計データベース。メンバー別の出演回数・演奏曲・共演ランキングなどを集計・可視化。">
+    <meta name="keywords" content="軽音サークル, 演奏統計, バンド統計, 演奏データベース, ライブ統計">
+    <meta property="og:title" content="軽音サークル 演奏統計データベース">
+    <meta property="og:description" content="軽音サークルの演奏統計データベース。出演回数・演奏曲・共演ランキングを可視化。">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/style.css?v=1.7.4">
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -69,14 +73,23 @@
                 <!-- 全体統計グラフ -->
                 <details class="stats-charts-section" id="stats-charts">
                     <summary class="stats-charts-toggle">グラフで見る統計</summary>
+                    <p class="chart-hint">凡例をタッチすると項目の表示/非表示を切り替えられます</p>
                     <div class="stats-charts-grid">
                         <div class="chart-card">
-                            <h4>ジャンル割合</h4>
+                            <h4>ジャンル割合 <span class="chart-stat" id="genre-chart-stat"></span></h4>
                             <canvas id="genre-pie-chart" width="300" height="300"></canvas>
                         </div>
                         <div class="chart-card">
-                            <h4>パート別人数割合</h4>
+                            <h4>パート別人数割合 <span class="chart-stat" id="part-chart-stat"></span></h4>
                             <canvas id="part-pie-chart" width="300" height="300"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>学部割合 <span class="chart-stat" id="dept-chart-stat"></span></h4>
+                            <canvas id="dept-pie-chart" width="300" height="300"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>学科割合 <span class="chart-stat" id="dept-detail-chart-stat"></span></h4>
+                            <canvas id="dept-detail-pie-chart" width="300" height="300"></canvas>
                         </div>
                     </div>
                     <div class="chart-card" id="genre-artist-detail" style="margin-top:1rem">
@@ -95,8 +108,10 @@
                         <dd>YouTube動画の概要欄からプログラムで自動抽出しています。手動入力ではないため、誤りがある場合があります。</dd>
                         <dt>表記揺れの統合</dt>
                         <dd>同一人物の表記揺れ（旧字体、ニックネーム等）は可能な限り統合しています。</dd>
+                        <dt>ジャンル分類</dt>
+                        <dd>アーティストのジャンル分けはすべてAIによる自動分類です。明らかに違うものがありますが、気が向いたら修正します。</dd>
                         <dt>プライバシー</dt>
-                        <dd>このページはメンバー専用です。検索エンジンにはインデックスされません。</dd>
+                        <dd>このページはメンバー専用です。</dd>
                         <dt>技術構成</dt>
                         <dd>Python + JavaScript (static site)</dd>
                     </dl>
@@ -253,12 +268,26 @@
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.7.2</p>
-            <p class="visitor-count">今日の訪問者: <span id="visitor-today">-</span>人 ／ 昨日: <span id="visitor-yesterday">-</span>人</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.7.4</p>
+            <p class="visitor-count">今日の訪問者: <span id="visitor-today">-</span>人 ／ 累計: <span id="visitor-total">-</span>人</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v1.7.4 (2026-03-14)</dt>
+                    <dd>
+                        <ul>
+                            <li>検索で見つからない場合「もしかして」候補を表示</li>
+                            <li>SEOメタタグ追加（検索エンジンからアクセス可能に）</li>
+                            <li>ジャンル分類の注意書きを追加</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.7.3 (2026-03-14)</dt>
+                    <dd>
+                        <ul>
+                            <li>「グラフで見る統計」に学部割合チャートを追加</li>
+                        </ul>
+                    </dd>
                     <dt>v1.7.2 (2026-03-14)</dt>
                     <dd>
                         <ul>
@@ -274,8 +303,8 @@
                     <dt>v1.6.3 (2026-03-13)</dt>
                     <dd>
                         <ul>
-                            <li>学部学科情報を266名分に大幅拡充（学籍番号テーブル＋予約データから追加）</li>
-                            <li>2025年2月合同ライブ・2月ライブをイベント一覧に追加（情報不足表示）</li>
+                            <li>学部学科情報を266名分に大幅拡充</li>
+                            <li>2026年2月合同ライブ・2月ライブをイベント一覧に追加（情報不足表示）</li>
                             <li>情報不足イベントの表示を赤字に変更</li>
                         </ul>
                     </dd>
@@ -387,6 +416,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="js/auth.js?v=1.4.0"></script>
-    <script src="js/app.js?v=1.7.2"></script>
+    <script src="js/app.js?v=1.7.4"></script>
 </body>
 </html>

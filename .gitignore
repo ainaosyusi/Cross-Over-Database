@@ -22,6 +22,7 @@ playlist_URL.md
 # 認証情報
 web/js/auth.js
 web/data/config.json
+web/api/config.php
 
 # テスト（実名を含む）
 tests/

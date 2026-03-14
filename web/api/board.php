@@ -2,19 +2,25 @@
 /**
  * 掲示板API - JSONファイルベースの簡易バックエンド
  *
- * GET  /api/board.php          → 全投稿取得
- * POST /api/board.php          → 新規投稿 {name, content}
- * DELETE /api/board.php?id=xxx → 投稿削除（管理者用）
+ * GET  /api/board.php          → 全投稿取得（要サイト認証）
+ * POST /api/board.php          → 新規投稿 {name, content}（要サイト認証）
+ * DELETE /api/board.php?id=xxx → 投稿削除（要管理者認証）
  */
+require_once __DIR__ . '/config.php';
+initSecureSession();
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 
 // プリフライト対応
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
+    exit;
+}
+
+// サイト認証チェック（全メソッド共通）
+if (!isAuthenticated()) {
+    http_response_code(403);
+    echo json_encode(['error' => '認証が必要です']);
     exit;
 }
 
@@ -114,8 +120,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// --- DELETE: 投稿削除（管理者用） ---
+// --- DELETE: 投稿削除（管理者認証必須） ---
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    if (!isAdminAuthenticated()) {
+        http_response_code(403);
+        echo json_encode(['error' => '管理者認証が必要です']);
+        exit;
+    }
     $id = $_GET['id'] ?? '';
     if ($id === '') {
         http_response_code(400);

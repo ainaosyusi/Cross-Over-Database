@@ -4,3 +4,14 @@
   Header set Pragma "no-cache"
   Header set Expires 0
 </filesMatch>
+
+# data/ディレクトリへの直接アクセスを禁止（api/data.php経由のみ許可）
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^data/ - [F,L]
+</IfModule>
+
+# JSONファイルのキャッシュ制御
+<filesMatch "\.json$">
+  Header set Cache-Control "private, no-store"
+</filesMatch>

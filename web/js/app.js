@@ -116,12 +116,18 @@ function backButton() {
 // --- データ読み込み ---
 async function loadData() {
     try {
-        const cacheBust = "?v=" + Date.now();
+        const cb = "&_=" + Date.now();
+        function authFetch(file) {
+            return fetch("api/data.php?file=" + file + cb).then(r => {
+                if (!r.ok) throw new Error(r.status === 403 ? "auth" : "fetch_error");
+                return r.json();
+            });
+        }
         const [members, rankings, videos, deptMap] = await Promise.all([
-            fetch("data/members.json" + cacheBust).then(r => r.json()),
-            fetch("data/rankings.json" + cacheBust).then(r => r.json()),
-            fetch("data/videos.json" + cacheBust).then(r => r.json()),
-            fetch("data/department_map.json" + cacheBust).then(r => r.json()).catch(() => null),
+            authFetch("members"),
+            authFetch("rankings"),
+            authFetch("videos"),
+            authFetch("department_map").catch(() => null),
         ]);
         membersData = members;
         rankingsData = rankings;
@@ -143,11 +149,17 @@ async function loadData() {
         // 訪問者カウンター
         fetch("api/counter.php").then(r => r.json()).then(c => {
             const el = document.getElementById("visitor-today");
-            const el2 = document.getElementById("visitor-yesterday");
+            const el2 = document.getElementById("visitor-total");
             if (el) el.textContent = c.today || 0;
-            if (el2) el2.textContent = c.yesterday || 0;
+            if (el2) el2.textContent = c.total || 0;
         }).catch(() => {});
     } catch (e) {
+        if (e.message === "auth") {
+            // セッション切れ → ログイン画面に戻す
+            document.getElementById("app-content").classList.add("hidden");
+            document.getElementById("login-screen").classList.remove("hidden");
+            return;
+        }
         console.error("データ読み込みエラー:", e);
         document.querySelector("main").innerHTML =
             '<div class="placeholder">データファイルが見つかりません。<br>先に generate_stats.py を実行してください。</div>';
@@ -754,7 +766,14 @@ function showMemberDetail(name) {
     const detail = document.getElementById("member-detail");
 
     if (!member) {
-        placeholder.textContent = `「${name}」は見つかりませんでした`;
+        const typeLabel = { member: "メンバー", song: "曲", artist: "アーティスト" };
+        const items = findSimilarItems(name, 8);
+        const suggestionsHtml = items.length > 0
+            ? `<div class="did-you-mean">もしかして：${items.map(s =>
+                `<span class="clickable" onclick="${s.onclick}">${escapeHtml(s.label)}<span class="did-you-mean-type">${typeLabel[s.type]}</span></span>`
+              ).join("　")}</div>`
+            : "";
+        placeholder.innerHTML = `「${escapeHtml(name)}」は見つかりませんでした${suggestionsHtml}`;
         placeholder.classList.remove("hidden");
         detail.classList.add("hidden");
         return;
@@ -892,6 +911,66 @@ function toggleGenreChart(id) {
     const btn = document.getElementById(`${id}-toggle`);
     const isHidden = wrap.classList.toggle("hidden");
     btn.textContent = isHidden ? "表示" : "隠す";
+}
+
+// --- もしかして（類似検索） ---
+function similarityScore(query, target) {
+    const q = query.toLowerCase(), t = target.toLowerCase();
+    let score = 0;
+    if (t.includes(q) || q.includes(t)) score += 10;
+    for (const ch of q) { if (t.includes(ch)) score += 2; }
+    if (t[0] === q[0]) score += 3;
+    score -= Math.abs(target.length - query.length) * 0.5;
+    if (q.length <= 8 && t.length <= 12) {
+        const d = editDistance(q, t);
+        if (d <= 2) score += (8 - d * 3);
+    }
+    return score;
+}
+
+function findSimilarItems(query, limit = 8) {
+    const results = [];
+    // メンバー
+    if (membersData) {
+        for (const name of Object.keys(membersData.members)) {
+            const s = similarityScore(query, name);
+            if (s > 2) results.push({ label: name, type: "member", score: s, onclick: `searchMember('${escapeAttr(name)}')` });
+        }
+    }
+    // 曲名・アーティスト
+    if (songIndex) {
+        const seen = new Set();
+        for (const s of songIndex) {
+            // 曲名
+            const key = s.title + "||" + s.artist;
+            if (!seen.has(key)) {
+                seen.add(key);
+                const sc = similarityScore(query, s.title);
+                if (sc > 2) results.push({ label: `${s.title} / ${s.artist}`, type: "song", score: sc, onclick: `showSongDetail('${escapeAttr(s.title)}', '${escapeAttr(s.artist)}')` });
+            }
+            // アーティスト
+            if (!seen.has("art:" + s.artist)) {
+                seen.add("art:" + s.artist);
+                const sc = similarityScore(query, s.artist);
+                if (sc > 2) results.push({ label: s.artist, type: "artist", score: sc, onclick: `showArtistDetail('${escapeAttr(s.artist)}')` });
+            }
+        }
+    }
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
+// 後方互換
+function findSimilarMembers(query, limit) { return findSimilarItems(query, limit).filter(i => i.type === "member").map(i => i.label); }
+
+function editDistance(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++)
+        for (let j = 1; j <= n; j++)
+            dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + (a[i-1] !== b[j-1] ? 1 : 0));
+    return dp[m][n];
 }
 
 // --- サジェスト ---
@@ -1098,6 +1177,8 @@ function renderStatsCharts() {
     genrePieRendered = true;
     renderGenrePieChart();
     renderPartPieChart();
+    renderDeptPieChart();
+    renderDeptDetailPieChart();
     renderGenreArtistDetail();
 }
 function renderGenrePieChart() {
@@ -1111,12 +1192,16 @@ function renderGenrePieChart() {
         }
         const labels = Object.keys(genreMap);
         const data = Object.values(genreMap);
+        const total = data.reduce((a, b) => a + b, 0);
+        const el = document.getElementById("genre-chart-stat");
+        if (el) el.textContent = `(${labels.length}ジャンル / ${total}曲)`;
+        const legendLabels = labels.map((l, i) => `${l} ${data[i]}曲`);
         const colors = ["#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47", "#FF6384", "#9966FF"];
         const ctx = document.getElementById("genre-pie-chart")?.getContext("2d");
         if (!ctx) return;
         new Chart(ctx, {
             type: "doughnut",
-            data: { labels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length) }] },
+            data: { labels: legendLabels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length) }] },
             options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } }
         });
     }).catch(() => {});
@@ -1126,13 +1211,82 @@ function renderPartPieChart() {
     const top = rankingsData.part_stats.slice(0, 8);
     const labels = top.map(p => p.part);
     const data = top.map(p => p.unique_members);
+    const total = data.reduce((a, b) => a + b, 0);
+    const el = document.getElementById("part-chart-stat");
+    if (el) el.textContent = `(${labels.length}パート / ${total}人)`;
+    const legendLabels = labels.map((l, i) => `${l} ${data[i]}人`);
     const colors = ["#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47", "#FF6384", "#9966FF"];
     const ctx = document.getElementById("part-pie-chart")?.getContext("2d");
     if (!ctx) return;
     new Chart(ctx, {
         type: "doughnut",
-        data: { labels, datasets: [{ data, backgroundColor: colors }] },
+        data: { labels: legendLabels, datasets: [{ data, backgroundColor: colors }] },
         options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } }
+    });
+}
+function renderDeptPieChart() {
+    if (!membersData?.members) return;
+    const deptCount = {};
+    for (const name of Object.keys(membersData.members)) {
+        const raw = departmentMap?.[name];
+        // 学部名を抽出（"理学部第一部 数学科" → "理学部第一部"）
+        const faculty = raw ? raw.split(/\s+/)[0] : "不明";
+        deptCount[faculty] = (deptCount[faculty] || 0) + 1;
+    }
+    // 人数降順ソート（不明は最後）
+    const sorted = Object.entries(deptCount).sort((a, b) => {
+        if (a[0] === "不明") return 1;
+        if (b[0] === "不明") return -1;
+        return b[1] - a[1];
+    });
+    const labels = sorted.map(e => e[0]);
+    const data = sorted.map(e => e[1]);
+    const total = data.reduce((a, b) => a + b, 0);
+    const known = total - (deptCount["不明"] || 0);
+    const el = document.getElementById("dept-chart-stat");
+    if (el) el.textContent = `(${labels.length - (deptCount["不明"] ? 1 : 0)}学部 / 判明${known}人)`;
+    const legendLabels = labels.map((l, i) => `${l} ${data[i]}人`);
+    const colors = ["#4472C4", "#ED7D31", "#70AD47", "#FFC000", "#5B9BD5", "#A5A5A5", "#FF6384", "#9966FF", "#36A2EB", "#FF9F40", "#C9CBCF", "#4BC0C0", "#F67019", "#8B5CF6"];
+    const ctx = document.getElementById("dept-pie-chart")?.getContext("2d");
+    if (!ctx) return;
+    new Chart(ctx, {
+        type: "doughnut",
+        data: { labels: legendLabels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length) }] },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } }
+    });
+}
+function renderDeptDetailPieChart() {
+    if (!membersData?.members) return;
+    const deptCount = {};
+    for (const name of Object.keys(membersData.members)) {
+        const raw = departmentMap?.[name];
+        const dept = raw || "不明";
+        deptCount[dept] = (deptCount[dept] || 0) + 1;
+    }
+    const sorted = Object.entries(deptCount).sort((a, b) => {
+        if (a[0] === "不明") return 1;
+        if (b[0] === "不明") return -1;
+        return b[1] - a[1];
+    });
+    const labels = sorted.map(e => e[0]);
+    const data = sorted.map(e => e[1]);
+    const total = data.reduce((a, b) => a + b, 0);
+    const known = total - (deptCount["不明"] || 0);
+    const el = document.getElementById("dept-detail-chart-stat");
+    if (el) el.textContent = `(${labels.length - (deptCount["不明"] ? 1 : 0)}学科 / 判明${known}人)`;
+    const legendLabels = labels.map((l, i) => `${l} ${data[i]}人`);
+    const colors = [
+        "#4472C4", "#ED7D31", "#70AD47", "#FFC000", "#5B9BD5", "#A5A5A5",
+        "#FF6384", "#9966FF", "#36A2EB", "#FF9F40", "#C9CBCF", "#4BC0C0",
+        "#F67019", "#8B5CF6", "#2ECC71", "#E74C3C", "#1ABC9C", "#F39C12",
+        "#9B59B6", "#34495E", "#E67E22", "#27AE60", "#D35400", "#7F8C8D"
+    ];
+    const ctx = document.getElementById("dept-detail-pie-chart")?.getContext("2d");
+    if (!ctx) return;
+    new Chart(ctx, {
+        type: "doughnut",
+        data: { labels: legendLabels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length) }] },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { font: { size: 10 } } } } }
     });
 }
 function renderGenreArtistDetail() {
@@ -1164,28 +1318,21 @@ function renderGenreArtistDetail() {
 // --- 管理機能（index.html 内組み込み） ---
 // ============================================================
 
-const ADMIN_AUTH_KEY = "keion_admin_auth";
-const ADMIN_AUTH_EXPIRY_KEY = "keion_admin_auth_expiry";
-const ADMIN_AUTH_DURATION = 7 * 24 * 60 * 60 * 1000;
-const ADMIN_PW_HASH_KEY = "keion_admin_pw_hash";
 const API_KEY_STORAGE = "keion_youtube_api_key";
 
 let adminVideoData = null;
 let adminSongs = [];
 let adminMembers = [];
 
-async function sha256Admin(text) {
-    const data = new TextEncoder().encode(text);
-    const hash = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-function isAdminAuth() {
-    const t = localStorage.getItem(ADMIN_AUTH_KEY);
-    const e = localStorage.getItem(ADMIN_AUTH_EXPIRY_KEY);
-    if (!t || !e) return false;
-    if (Date.now() > parseInt(e, 10)) { localStorage.removeItem(ADMIN_AUTH_KEY); localStorage.removeItem(ADMIN_AUTH_EXPIRY_KEY); return false; }
-    return t === "admin_ok";
+async function checkAdminAuth() {
+    try {
+        const res = await fetch("api/login.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "admin_check" }),
+        });
+        return res.ok;
+    } catch { return false; }
 }
 
 async function handleAdminLogin() {
@@ -1194,21 +1341,23 @@ async function handleAdminLogin() {
     const pw = input.value.trim();
     if (!pw) return;
     try {
-        const hash = await sha256Admin(pw);
-        const stored = localStorage.getItem(ADMIN_PW_HASH_KEY) || await sha256Admin("admin_crossover");
-        if (hash === stored) {
-            localStorage.setItem(ADMIN_AUTH_KEY, "admin_ok");
-            localStorage.setItem(ADMIN_AUTH_EXPIRY_KEY, String(Date.now() + ADMIN_AUTH_DURATION));
+        const res = await fetch("api/login.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: pw, type: "admin" }),
+        });
+        if (res.ok) {
             error.classList.add("hidden");
             showAdminPanel();
         } else {
-            error.textContent = "パスワードが違います";
+            const data = await res.json().catch(() => ({}));
+            error.textContent = data.error || "パスワードが違います";
             error.classList.remove("hidden");
             input.value = "";
             input.focus();
         }
     } catch (e) {
-        error.textContent = "エラー: " + e.message;
+        error.textContent = "通信エラーが発生しました";
         error.classList.remove("hidden");
     }
 }
@@ -1373,8 +1522,8 @@ async function adminTestKey() {
     } catch (e) { st.textContent = `接続エラー: ${e.message}`; st.className = "admin-status error"; }
 }
 
-function initAdminTab() {
-    if (isAdminAuth()) showAdminPanel();
+async function initAdminTab() {
+    if (await checkAdminAuth()) showAdminPanel();
     document.getElementById("admin-login-btn")?.addEventListener("click", handleAdminLogin);
     document.getElementById("admin-password")?.addEventListener("keydown", e => { if (e.key === "Enter") handleAdminLogin(); });
     document.getElementById("admin-fetch-btn")?.addEventListener("click", adminFetchVideo);
@@ -1387,14 +1536,52 @@ function initAdminTab() {
     document.getElementById("admin-test-key")?.addEventListener("click", adminTestKey);
 }
 
+// --- サイトログイン ---
+async function handleSiteLogin() {
+    const input = document.getElementById("password-input");
+    const err = document.getElementById("login-error");
+    const pw = input.value;
+    if (!pw) return;
+    try {
+        const r = await fetch("api/login.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: pw })
+        });
+        const data = await r.json();
+        if (data.ok) {
+            document.getElementById("login-screen").classList.add("hidden");
+            document.getElementById("app-content").classList.remove("hidden");
+            loadData();
+        } else {
+            err.classList.remove("hidden");
+        }
+    } catch (e) {
+        err.textContent = "サーバーに接続できません";
+        err.classList.remove("hidden");
+    }
+}
+
 // --- イベント ---
 document.addEventListener("DOMContentLoaded", () => {
-    // auth.jsがある場合はそちらから初期化
-    if (typeof initAuth === "function") {
-        initAuth();
-    } else {
-        loadData();
-    }
+    // ログインボタン
+    document.getElementById("login-btn").addEventListener("click", handleSiteLogin);
+    document.getElementById("password-input").addEventListener("keydown", e => {
+        if (e.key === "Enter") handleSiteLogin();
+    });
+
+    // セッション確認 → 認証済みなら直接データ表示
+    fetch("api/data.php?file=rankings&_=" + Date.now()).then(r => {
+        if (r.ok) {
+            document.getElementById("login-screen").classList.add("hidden");
+            document.getElementById("app-content").classList.remove("hidden");
+            loadData();
+        } else {
+            document.getElementById("login-screen").classList.remove("hidden");
+        }
+    }).catch(() => {
+        document.getElementById("login-screen").classList.remove("hidden");
+    });
 
     // タブ切り替え
     document.querySelectorAll(".tab").forEach(btn => {
