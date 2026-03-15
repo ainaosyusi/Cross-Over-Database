@@ -12,7 +12,7 @@ if (!isAuthenticated()) {
 }
 
 // 許可するファイル名のホワイトリスト（パストラバーサル防止）
-$allowed = ['members', 'rankings', 'videos', 'department_map', 'genre_map'];
+$allowed = ['members', 'rankings', 'videos', 'department_map', 'genre_map', 'meta'];
 $file = $_GET['file'] ?? '';
 
 if (!in_array($file, $allowed, true)) {

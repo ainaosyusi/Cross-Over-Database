@@ -18,9 +18,15 @@ def export_json(
     output_dir.mkdir(parents=True, exist_ok=True)
     now = datetime.now().isoformat(timespec="seconds")
 
+    # --- meta.json ---
+    meta_data = {
+        "generated_at": now,
+        "version": "1.8.1",
+    }
+    _write_json(output_dir / "meta.json", meta_data)
+
     # --- videos.json ---
     videos_data = {
-        "generated_at": now,
         "total_videos": len(videos),
         "videos": [
             {
@@ -44,7 +50,6 @@ def export_json(
     # --- members.json ---
     all_names = calculator.get_all_member_names()
     members_data = {
-        "generated_at": now,
         "total_members": len(all_names),
         "members": {},
     }
@@ -65,7 +70,6 @@ def export_json(
     # --- rankings.json ---
     overall = calculator.overall_stats()
     rankings_data = {
-        "generated_at": now,
         "overall": overall,
         "by_band_count": rankings.by_band_count,
         "by_song_count": rankings.by_song_count,

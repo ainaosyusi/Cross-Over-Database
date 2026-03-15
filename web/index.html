@@ -9,7 +9,12 @@
     <meta property="og:title" content="軽音サークル 演奏統計データベース">
     <meta property="og:description" content="軽音サークルの演奏統計データベース。出演回数・演奏曲・共演ランキングを可視化。">
     <meta property="og:type" content="website">
-    <link rel="stylesheet" href="css/style.css?v=1.7.4">
+    <link rel="icon" href="img/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" href="img/favicon-32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="CrossOver DB">
+    <link rel="stylesheet" href="css/style.css?v=1.8.1">
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -90,6 +95,8 @@
                         <div class="chart-card">
                             <h4>学科割合 <span class="chart-stat" id="dept-detail-chart-stat"></span></h4>
                             <canvas id="dept-detail-pie-chart" width="300" height="300"></canvas>
+                            <button class="chart-legend-toggle" onclick="this.nextElementSibling.classList.toggle('hidden');this.textContent=this.nextElementSibling.classList.contains('hidden')?'▶ 凡例を表示':'▼ 凡例を閉じる'">▶ 凡例を表示</button>
+                            <div id="dept-detail-legend" class="chart-legend-scroll hidden"></div>
                         </div>
                     </div>
                     <div class="chart-card" id="genre-artist-detail" style="margin-top:1rem">
@@ -118,6 +125,14 @@
                     <p class="info-note">一部のライブ（2月ライブ、2月POP合同等）は動画概要欄にセットリストが記載されていないため、データが取得できていません。</p>
                     <p class="info-note">情報をお持ちの方は、ぜひご提供ください！より正確な統計を目指しています。</p>
                     <p class="info-note">情報の誤りや追加データがある方は管理者にご連絡ください。</p>
+                </div>
+
+                <!-- ブックマーク案内 -->
+                <div class="info-card bookmark-guide">
+                    <h3 class="info-card-title">⚠️このサイトをブックマークしよう</h3>
+                    <p>このサイトは検索エンジンからはとても見つけにくいため、<strong>ブックマーク</strong>または<strong>ホーム画面への追加</strong>をおすすめします。</p>
+                    <p>サイトの後継管理者がいない場合でも、最低でもあと1年はこのサイトは運用を続けます。それまでデータの閲覧・更新が可能です。</p>
+                    <p style="margin-top:0.6rem"><a href="bookmark.html" style="color:var(--primary);font-weight:600;font-size:0.9rem">📖 ブックマーク・ホーム画面追加の手順はこちら</a></p>
                 </div>
 
                 <!-- ランキング機能ガイド -->
@@ -268,12 +283,28 @@
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.7.4</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.8.1</p>
             <p class="visitor-count">今日の訪問者: <span id="visitor-today">-</span>人 ／ 累計: <span id="visitor-total">-</span>人</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v1.8.1 (2026-03-16)</dt>
+                    <dd>
+                        <ul>
+                            <li>サイトアイコン追加（ブックマーク・ホーム画面対応）</li>
+                            <li>ブックマーク案内を追加</li>
+                            <li>演奏一覧にバンド名を表示</li>
+                            <li>内部コード整理・パフォーマンス改善</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.8.0 (2026-03-15)</dt>
+                    <dd>
+                        <ul>
+                            <li>内部コード整理・パフォーマンス改善</li>
+                            <li>セキュリティ強化</li>
+                        </ul>
+                    </dd>
                     <dt>v1.7.4 (2026-03-14)</dt>
                     <dd>
                         <ul>
@@ -415,7 +446,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="js/auth.js?v=1.4.0"></script>
-    <script src="js/app.js?v=1.7.4"></script>
+    <script src="js/app.js?v=1.8.0"></script>
+    <script src="js/search.js?v=1.8.0"></script>
+    <script src="js/admin.js?v=1.8.0"></script>
 </body>
 </html>

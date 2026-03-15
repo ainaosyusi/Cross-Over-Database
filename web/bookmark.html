@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブックマーク方法 - CrossOverデータベース</title>
+    <link rel="icon" href="img/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+            background: #f5f7fa; color: #333; line-height: 1.7;
+        }
+        .container { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+        .back-link { display: inline-block; margin-bottom: 1rem; color: #4472C4; text-decoration: none; font-size: 0.9rem; }
+        .back-link:hover { text-decoration: underline; }
+        h1 { font-size: 1.3rem; margin-bottom: 0.3rem; }
+        .subtitle { color: #666; font-size: 0.85rem; margin-bottom: 1.5rem; }
+        .notice {
+            background: #eef2ff; border-left: 4px solid #6366f1;
+            padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem;
+            font-size: 0.88rem;
+        }
+        .notice strong { color: #4338ca; }
+        .section {
+            background: #fff; border-radius: 12px; padding: 1.2rem;
+            margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .section h2 { font-size: 1.05rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+        .section h2 .icon { font-size: 1.3rem; }
+        .steps { list-style: none; counter-reset: step; padding: 0; }
+        .steps li {
+            counter-increment: step; position: relative;
+            padding: 0.5rem 0 0.5rem 2.2rem; font-size: 0.88rem;
+        }
+        .steps li::before {
+            content: counter(step); position: absolute; left: 0; top: 0.45rem;
+            width: 1.6rem; height: 1.6rem; border-radius: 50%;
+            background: #4472C4; color: #fff; font-size: 0.75rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .screenshot-placeholder {
+            background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px;
+            height: 320px; display: flex; align-items: center; justify-content: center;
+            color: #999; font-size: 0.85rem; margin: 0.8rem 0;
+        }
+        .screenshot-placeholder img {
+            max-width: 100%; max-height: 100%; border-radius: 6px; object-fit: contain;
+        }
+        .tip { background: #f8f9fa; padding: 0.7rem; border-radius: 6px; font-size: 0.82rem; color: #555; margin-top: 0.5rem; }
+        .footer-note { text-align: center; color: #999; font-size: 0.78rem; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">&larr; サイトに戻る</a>
+        <h1>CrossOverデータベースをホーム画面に追加する方法</h1>
+        <p class="subtitle">ブックマークしておけば、いつでもワンタップでアクセスできます</p>
+
+        <div class="notice">
+            <strong>なぜブックマークが必要？</strong><br>
+            このサイトは検索エンジンからはとても見つけにくいため、ブックマークまたはホーム画面への追加をおすすめします。<br>
+            サイトの後継管理者がいない場合でも、最低でもあと1年はこのサイトは運用を続けます。
+        </div>
+
+        <!-- iPhone -->
+        <div class="section">
+            <h2><span class="icon">📱</span> iPhone / iPad の場合</h2>
+            <ol class="steps">
+                <li>Safariでこのサイトを開いた状態で、画面下部の<strong>共有ボタン</strong>（□に↑のアイコン）をタップ</li>
+                <li>メニューをスクロールして「<strong>ホーム画面に追加</strong>」を選択</li>
+                <li>名前はそのままで右上の「<strong>追加</strong>」をタップ</li>
+                <li>ホーム画面にアイコンが追加されます！</li>
+            </ol>
+            <div class="screenshot-placeholder" style="height:auto;border:none;background:none;">
+                <img src="img/guide-iphone-1.png" alt="iPhoneホーム画面に追加した例">
+            </div>
+            <div class="tip">💡 Chromeではなく<strong>Safari</strong>で開いてください。Chromeでは「ホーム画面に追加」が表示されません。</div>
+        </div>
+
+        <!-- Android -->
+        <div class="section">
+            <h2><span class="icon">🤖</span> Android の場合</h2>
+            <ol class="steps">
+                <li>Chromeでこのサイトを開いた状態で、右上の<strong>「︙」メニュー</strong>をタップ</li>
+                <li>「<strong>ホーム画面に追加</strong>」または「<strong>アプリをインストール</strong>」を選択</li>
+                <li>「<strong>追加</strong>」をタップ</li>
+                <li>ホーム画面にアイコンが追加されます！</li>
+            </ol>
+        </div>
+
+        <!-- PC -->
+        <div class="section">
+            <h2><span class="icon">💻</span> PC（Chrome / Edge / Firefox）の場合</h2>
+            <ol class="steps">
+                <li><strong>Ctrl+D</strong>（Mac: <strong>⌘+D</strong>）を押す</li>
+                <li>保存先フォルダを選んで「完了」をクリック</li>
+            </ol>
+            <div class="tip">💡 ブックマークバーに追加すると、常にブラウザ上部に表示されて便利です。</div>
+        </div>
+
+        <p class="footer-note">CrossOverデータベース</p>
+    </div>
+</body>
+</html>

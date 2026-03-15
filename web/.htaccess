@@ -11,7 +11,37 @@
   RewriteRule ^data/ - [F,L]
 </IfModule>
 
+# config.phpへの直接アクセスを禁止（パスワードハッシュ保護）
+<filesMatch "config\.php$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+  </IfModule>
+</filesMatch>
+
+# api/内のJSONデータファイルへの直接アクセスを禁止
+# board_data.json, counter_data.json, counter_total.json がサーバーで自動生成される
+<filesMatch "(board_data|counter_data|counter_total)\.json$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+  </IfModule>
+</filesMatch>
+
 # JSONファイルのキャッシュ制御
 <filesMatch "\.json$">
   Header set Cache-Control "private, no-store"
 </filesMatch>
+
+# セキュリティヘッダー
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "DENY"
+  Header set X-XSS-Protection "1; mode=block"
+</IfModule>
