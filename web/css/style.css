@@ -529,6 +529,40 @@ footer {
     font-size: 0.8rem;
 }
 
+/* クイックスタジオ予約 */
+.studio-area { display: flex; flex-direction: column; gap: 0.3rem; }
+.studio-area details { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.studio-area-label {
+    cursor: pointer; padding: 0.5rem 0.7rem; font-weight: 600;
+    font-size: 0.85rem; background: var(--bg); color: var(--text);
+}
+.studio-links {
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    padding: 0.5rem 0.7rem;
+}
+.studio-links a {
+    display: inline-block; padding: 0.35rem 0.7rem;
+    font-size: 0.78rem; background: var(--primary); color: #fff;
+    border-radius: 4px; text-decoration: none; white-space: nowrap;
+}
+.studio-links a:hover, .studio-links a:active { opacity: 0.85; }
+.studio-guide { margin-bottom: 0.3rem; }
+.studio-price-table {
+    width: 100%; border-collapse: collapse; font-size: 0.75rem;
+}
+.studio-price-table th, .studio-price-table td {
+    padding: 0.35rem 0.5rem; border: 1px solid var(--border);
+    text-align: center; white-space: nowrap;
+}
+.studio-price-table th {
+    background: var(--primary); color: #fff; font-weight: 600;
+}
+.studio-price-table tr:nth-child(even) { background: #f8f9fa; }
+.studio-note {
+    font-size: 0.72rem; color: var(--text-muted); margin: 0.2rem 0 0 0.7rem;
+    line-height: 1.5;
+}
+
 /* ブックマーク案内 */
 .bookmark-guide p { margin: 0.5rem 0; font-size: 0.85rem; line-height: 1.6; }
 .bookmark-details { margin-top: 0.6rem; }
@@ -585,6 +619,48 @@ footer {
 }
 
 /* レスポンシブ */
+/* ボトムナビゲーション（モバイル） */
+.tabs-bottom {
+    display: none;
+}
+@media (max-width: 768px) {
+    .tabs-top { display: none; }
+    .tabs-bottom {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--card-bg);
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+        z-index: 1000;
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+    }
+    .btab {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 0.8rem 0.2rem;
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 0.65rem;
+        transition: color 0.15s;
+    }
+    .btab.active {
+        color: var(--primary);
+        font-weight: 700;
+    }
+    .btab-icon { width: 22px; height: 22px; opacity: 0.5; }
+    .btab.active .btab-icon { opacity: 1; }
+    .btab-label { white-space: nowrap; }
+    /* ボトムナビの分だけコンテンツに余白 */
+    footer { padding-bottom: 6.5rem; }
+}
 @media (max-width: 480px) {
     header h1 { font-size: 1.2rem; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
@@ -592,6 +668,50 @@ footer {
     .stat-value { font-size: 1.5rem; }
     .member-stats { flex-direction: column; gap: 0.5rem; }
     .ranking-tabs { gap: 0.3rem; }
+}
+
+/* イベント名インデックス */
+.events-index {
+    margin-bottom: 1rem;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 0.5rem;
+}
+.events-index-year { margin-bottom: 0.5rem; }
+.events-index-year:last-child { margin-bottom: 0; }
+.events-index-year-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text);
+    padding: 0.3rem 0.2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.3rem;
+}
+.events-index-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+}
+.events-index-grid a {
+    display: block;
+    padding: 0.45rem 0.4rem;
+    font-size: 0.75rem;
+    color: var(--primary);
+    text-decoration: none;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    background: var(--bg);
+}
+.events-index-grid a:hover, .events-index-grid a:active {
+    background: var(--primary);
+    color: #fff;
+}
+@media (max-width: 480px) {
+    .events-index-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* イベント一覧タブ */

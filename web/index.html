@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="CrossOver DB">
-    <link rel="stylesheet" href="css/style.css?v=1.8.1">
+    <link rel="stylesheet" href="css/style.css?v=1.9.2">
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -43,14 +43,21 @@
             </div>
         </header>
 
-        <nav class="tabs">
-            <button class="tab active" data-tab="overview">全体統計</button>
+        <nav class="tabs tabs-top">
+            <button class="tab active" data-tab="overview">ホーム</button>
             <button class="tab" data-tab="events-tab">イベント一覧</button>
             <button class="tab" data-tab="rankings">ランキング</button>
             <button class="tab" data-tab="search-result">検索結果</button>
             <button class="tab" data-tab="board">掲示板</button>
             <!-- 管理タブ: 必要時にコメント解除 -->
             <!-- <button class="tab" data-tab="admin-tab">管理</button> -->
+        </nav>
+        <nav class="tabs-bottom" id="tabs-bottom">
+            <button class="btab active" data-tab="overview"><img class="btab-icon" src="img/tab-stats.png" alt=""><span class="btab-label">ホーム</span></button>
+            <button class="btab" data-tab="events-tab"><img class="btab-icon" src="img/tab-event.png" alt=""><span class="btab-label">イベント</span></button>
+            <button class="btab" data-tab="rankings"><img class="btab-icon" src="img/tab-ranking.png" alt=""><span class="btab-label">ランキング</span></button>
+            <button class="btab" data-tab="search-result"><img class="btab-icon" src="img/tab-search.png" alt=""><span class="btab-label">検索</span></button>
+            <button class="btab" data-tab="board"><img class="btab-icon" src="img/tab-board.png" alt=""><span class="btab-label">掲示板</span></button>
         </nav>
 
         <main>
@@ -104,6 +111,104 @@
                         <div id="genre-artist-list"></div>
                     </div>
                 </details>
+
+                <!-- クイックスタジオ予約 -->
+                <div class="info-card studio-quick">
+                    <h3 class="info-card-title">クイックスタジオ予約</h3>
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem">スタジオの予約ページに直接飛べます</p>
+                    <details class="studio-guide">
+                        <summary style="font-size:0.82rem;font-weight:600;color:var(--primary);cursor:pointer;padding:0.3rem 0">初心者ガイド: 部屋の広さの選び方</summary>
+                        <div style="font-size:0.78rem;line-height:1.7;padding:0.4rem 0">
+                            <p><strong>3〜4人バンド</strong> → 8〜12畳で十分（ドラム+アンプが余裕で入る）</p>
+                            <p><strong>5〜6人バンド</strong> → 12〜16畳が快適（Vo.2人やKey.がいる場合）</p>
+                            <p><strong>7人以上</strong> → 16畳以上推奨</p>
+                            <p style="color:var(--text-muted);margin-top:0.3rem">迷ったら少し広めの部屋を選ぶのがおすすめ。狭いと音がこもって練習しづらいです。</p>
+                        </div>
+                    </details>
+                    <details class="studio-guide">
+                        <summary style="font-size:0.82rem;font-weight:600;color:var(--primary);cursor:pointer;padding:0.3rem 0">料金比較表（1時間あたり最安・税込）</summary>
+                        <div style="overflow-x:auto;margin-top:0.3rem">
+                            <table class="studio-price-table">
+                                <thead>
+                                    <tr><th>エリア</th><th>スタジオ</th><th>平日昼</th><th>土日祝</th><th>個人練習</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>松戸</td><td>ダグアウト2</td><td>770円〜</td><td>-</td><td>-</td></tr>
+                                    <tr><td>松戸</td><td>MUSIC BANK</td><td>1,100円〜</td><td>1,500円〜</td><td>500円〜</td></tr>
+                                    <tr><td>新松戸</td><td>パックス</td><td>1,900円〜</td><td>2,500円〜</td><td>800円</td></tr>
+                                    <tr><td>北千住</td><td>パックス</td><td>1,900円〜</td><td>2,600円〜</td><td>800円</td></tr>
+                                    <tr><td>新宿</td><td>音楽館 西口</td><td>1,580円〜</td><td>-</td><td>500円〜</td></tr>
+                                    <tr><td>新宿</td><td>ノア</td><td>1,760円〜</td><td>-</td><td>770円</td></tr>
+                                    <tr><td>新宿</td><td>ペンタ</td><td>2,200円〜</td><td>3,190円〜</td><td>880円</td></tr>
+                                    <tr><td>新宿</td><td>Vantage</td><td>2,200円〜</td><td>-</td><td>590円〜</td></tr>
+                                    <tr><td>御茶ノ水</td><td>リンキィディンク</td><td>1,700円〜</td><td>2,500円〜</td><td>-</td></tr>
+                                    <tr><td>御茶ノ水</td><td>ノア</td><td>1,870円〜</td><td>-</td><td>770円</td></tr>
+                                    <tr><td>渋谷</td><td>ノア 1号店</td><td>1,100円〜</td><td>-</td><td>600円〜</td></tr>
+                                    <tr><td>渋谷</td><td>GATEWAY</td><td>1,650円〜</td><td>2,310円〜</td><td>770円</td></tr>
+                                    <tr><td>渋谷</td><td>ペンタ CS</td><td>1,980円〜</td><td>2,860円〜</td><td>880円</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem">※ 料金は最小部屋の最安値目安です。部屋サイズ・時間帯で変動します。「-」は情報未取得。</p>
+                    </details>
+                    <div class="studio-area">
+                        <details>
+                            <summary class="studio-area-label">松戸</summary>
+                            <div class="studio-links">
+                                <a href="https://www.studiodugout2.com/reserved" target="_blank" rel="noopener">スタジオダグアウト2</a>
+                                <a href="https://www.ito-ongaku.com/rental/musicbank-matsudo/" target="_blank" rel="noopener">MUSIC BANK 松戸</a>
+                            </div>
+                            <p class="studio-note">ダグアウト2: Web予約可・学割あり（平日10%OFF）</p>
+                            <p class="studio-note">MUSIC BANK: 入会金500円・キャンセル3日前から有料</p>
+                        </details>
+                        <details>
+                            <summary class="studio-area-label">新松戸</summary>
+                            <div class="studio-links">
+                                <a href="https://www.studio-packs.jp/shinmatsudo" target="_blank" rel="noopener">スタジオパックス 新松戸店</a>
+                            </div>
+                            <p class="studio-note">⚠ 初回は電話予約のみ（2回目以降Web可）</p>
+                        </details>
+                        <details>
+                            <summary class="studio-area-label">北千住</summary>
+                            <div class="studio-links">
+                                <a href="https://www.studio-packs.jp/kitasenju" target="_blank" rel="noopener">スタジオパックス 北千住店</a>
+                            </div>
+                            <p class="studio-note">⚠ 初回は電話予約のみ（2回目以降Web可）</p>
+                        </details>
+                        <details>
+                            <summary class="studio-area-label">新宿</summary>
+                            <div class="studio-links">
+                                <a href="https://studiopenta.jp/rehearsal/shinjuku/" target="_blank" rel="noopener">スタジオペンタ 新宿店</a>
+                                <a href="https://www.studionoah.jp/shinjuku/" target="_blank" rel="noopener">サウンドスタジオノア 新宿店</a>
+                                <a href="http://www.studiovantage.jp/" target="_blank" rel="noopener">Sound Studio Vantage</a>
+                                <a href="http://www.st-ongakukan.com/sinjukunishi/sinjukunishi.html" target="_blank" rel="noopener">スタジオ音楽館 新宿西口</a>
+                            </div>
+                            <p class="studio-note">ペンタ: ⚠ 初回は電話/店頭のみ・学割あり</p>
+                            <p class="studio-note">ノア: Web予約可（要会員登録・無料）</p>
+                        </details>
+                        <details>
+                            <summary class="studio-area-label">御茶ノ水</summary>
+                            <div class="studio-links">
+                                <a href="https://www.studionoah.jp/ochanomizu/" target="_blank" rel="noopener">サウンドスタジオノア 御茶ノ水店</a>
+                                <a href="https://rinky.info/studio/ochanomizu/" target="_blank" rel="noopener">リンキィディンク 御茶ノ水</a>
+                                <a href="http://www.st-ongakukan.com/akiba/akiba.html" target="_blank" rel="noopener">スタジオ音楽館 アキバ店</a>
+                            </div>
+                            <p class="studio-note">ノア: Web予約可（要会員登録・無料）</p>
+                            <p class="studio-note">リンキィディンク: U22割・U18割あり（学生証必要）</p>
+                        </details>
+                        <details>
+                            <summary class="studio-area-label">渋谷</summary>
+                            <div class="studio-links">
+                                <a href="https://www.studionoah.jp/shibuya1/" target="_blank" rel="noopener">サウンドスタジオノア 渋谷1号店</a>
+                                <a href="https://www.studionoah.jp/shibuya2/" target="_blank" rel="noopener">サウンドスタジオノア 渋谷2号店</a>
+                                <a href="https://studiopenta.jp/rehearsal/city/" target="_blank" rel="noopener">スタジオペンタ 渋谷シティサイド</a>
+                                <a href="http://www.gw-studio.com/studios/studio_shibu2/index" target="_blank" rel="noopener">GATEWAY STUDIO 渋谷道玄坂店</a>
+                            </div>
+                            <p class="studio-note">ペンタ: ⚠ 初回は電話/店頭のみ・学割あり</p>
+                            <p class="studio-note">GATEWAY: ⚠ 初回は電話予約のみ・学割あり（要申告）</p>
+                        </details>
+                    </div>
+                </div>
 
                 <!-- ページ情報 -->
                 <div class="info-card">
@@ -164,6 +269,7 @@
                 <div class="event-filter">
                     <button class="ranking-tab active" data-year="all" onclick="filterEventsByYear('all', this)">すべて</button>
                 </div>
+                <div id="events-index" class="events-index"></div>
                 <div id="events-list"></div>
             </section>
 
@@ -283,12 +389,28 @@
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.8.1</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.9.0</p>
             <p class="visitor-count">今日の訪問者: <span id="visitor-today">-</span>人 ／ 累計: <span id="visitor-total">-</span>人</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v1.9.0 (2026-03-17)</dt>
+                    <dd>
+                        <ul>
+                            <li>クイックスタジオ予約リンク追加</li>
+                            <li>ランキングの学年フィルターを整理（4年生以上を統合）</li>
+                            <li>「全体統計」タブを「ホーム」に変更</li>
+                            <li>イベント一覧にインデックス追加</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.8.2 (2026-03-16)</dt>
+                    <dd>
+                        <ul>
+                            <li>スマホ版ボトムナビゲーション追加</li>
+                            <li>学科チャートの凡例改善</li>
+                        </ul>
+                    </dd>
                     <dt>v1.8.1 (2026-03-16)</dt>
                     <dd>
                         <ul>
@@ -446,8 +568,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="js/app.js?v=1.8.0"></script>
-    <script src="js/search.js?v=1.8.0"></script>
-    <script src="js/admin.js?v=1.8.0"></script>
+    <script src="js/app.js?v=1.9.2"></script>
+    <script src="js/search.js?v=1.9.2"></script>
+    <script src="js/admin.js?v=1.9.2"></script>
 </body>
 </html>

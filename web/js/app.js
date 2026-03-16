@@ -19,6 +19,11 @@ function maxGrade(grades) {
     if (!grades || grades.length === 0) return "?";
     return grades.reduce((best, g) => gradeValue(g) > gradeValue(best) ? g : best, grades[0]);
 }
+function normalizeGrade(g) {
+    // 4年生以上（4, M1, M2, B1, B2）は「4+」に統合
+    return gradeValue(g) >= 4 ? "4+" : g;
+}
+const DISPLAY_GRADES = ["1", "2", "3", "4+"];
 
 // --- 曲インデックス構築 ---
 function buildSongIndex() {
@@ -97,9 +102,12 @@ function goBack() {
             break;
     }
 }
+function syncTabActive(tabName) {
+    document.querySelectorAll(".tab, .btab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(`[data-tab="${tabName}"]`).forEach(t => t.classList.add("active"));
+}
 function switchToTab(tabName, rankingTab) {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add("active");
+    syncTabActive(tabName);
     document.querySelectorAll(".tab-content").forEach(s => s.classList.remove("active"));
     document.getElementById(tabName).classList.add("active");
     if (tabName === "rankings" && rankingTab) {
@@ -302,8 +310,8 @@ function rankingTable(headers, rows, nameClickable = false) {
 // --- 学年フィルター ---
 function renderGradeFilterUI(type) {
     const all = rankingGradeFilter === null;
-    const btns = [null, ...GRADE_ORDER_LIST].map(g => {
-        const label = g === null ? "全員" : `${g}年`;
+    const btns = [null, ...DISPLAY_GRADES].map(g => {
+        const label = g === null ? "全員" : g === "4+" ? "4年生以上" : `${g}年`;
         const active = (g === null ? all : rankingGradeFilter === g) ? " active" : "";
         return `<button class="ranking-tab${active}" style="font-size:0.75rem;padding:0.3rem 0.6rem" onclick="setGradeFilter(${g === null ? "null" : `'${g}'`}, '${type}')">${label}</button>`;
     }).join("");
@@ -317,7 +325,7 @@ function applyGradeFilter(items) {
     if (!rankingGradeFilter || !membersData) return items;
     return items.filter(r => {
         const m = membersData.members[r.name];
-        return m && maxGrade(m.grades_seen || []) === rankingGradeFilter;
+        return m && normalizeGrade(maxGrade(m.grades_seen || [])) === rankingGradeFilter;
     });
 }
 
@@ -326,11 +334,12 @@ function renderGradeStats() {
     if (!membersData) return '<div class="placeholder">データなし</div>';
     const gradeGroups = {};
     for (const [name, m] of Object.entries(membersData.members)) {
-        const grade = maxGrade(m.grades_seen || []);
+        const grade = normalizeGrade(maxGrade(m.grades_seen || []));
         if (!gradeGroups[grade]) gradeGroups[grade] = [];
         gradeGroups[grade].push({ name, ...m });
     }
-    const grades = Object.keys(gradeGroups).sort((a, b) => gradeValue(a) - gradeValue(b));
+    const gradeOrder = ["1", "2", "3", "4+", "?"];
+    const grades = Object.keys(gradeGroups).sort((a, b) => gradeOrder.indexOf(a) - gradeOrder.indexOf(b));
     return grades.map(grade => {
         const members = gradeGroups[grade];
         const totalBands = members.reduce((s, m) => s + m.total_bands, 0);
@@ -343,7 +352,7 @@ function renderGradeStats() {
         }
         const topArtists = Object.entries(artistCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
         const topMembers = [...members].sort((a, b) => b.total_bands - a.total_bands).slice(0, 5);
-        const label = GRADE_ORDER_LIST.includes(grade) ? `${grade}年生` : "学年不明";
+        const label = grade === "4+" ? "4年生以上" : grade === "?" ? "学年不明" : `${grade}年生`;
         return `<div class="band-card">
             <div class="member-name" style="font-size:1.1rem;margin:0.3rem 0">${label} <span class="part-count">(${members.length}人)</span></div>
             <div class="member-stats" style="font-size:0.85rem;margin-bottom:0.5rem">
@@ -717,8 +726,7 @@ function _currentNavState() {
 }
 
 function _switchToSearchResult() {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    document.querySelector('[data-tab="search-result"]').classList.add("active");
+    syncTabActive("search-result");
     document.querySelectorAll(".tab-content").forEach(s => s.classList.remove("active"));
     document.getElementById("search-result").classList.add("active");
 }
@@ -963,8 +971,27 @@ function renderEventsTab(fiscalYear) {
         ? events.filter(e => getFiscalYear(e.date) === fiscalYear)
         : events;
     const container = document.getElementById("events-list");
-    if (!filtered.length) { container.innerHTML = '<div class="placeholder">データなし</div>'; return; }
-    container.innerHTML = filtered.map(e => {
+    if (!filtered.length) { container.innerHTML = '<div class="placeholder">データなし</div>'; document.getElementById("events-index").innerHTML = ""; return; }
+    // イベント名インデックス（年度別）生成
+    const indexEl = document.getElementById("events-index");
+    if (indexEl) {
+        const byYear = {};
+        filtered.forEach((e, i) => {
+            const fy = getFiscalYear(e.date) || "不明";
+            if (!byYear[fy]) byYear[fy] = [];
+            byYear[fy].push({ e, i });
+        });
+        const sortedYears = Object.keys(byYear).sort((a, b) => b - a);
+        indexEl.innerHTML = sortedYears.map(y =>
+            `<div class="events-index-year">
+                <div class="events-index-year-label">${y}年度</div>
+                <div class="events-index-grid">${byYear[y].map(({ e, i }) =>
+                    `<a href="#" onclick="event.preventDefault();document.getElementById('ev-${i}').scrollIntoView({behavior:'smooth',block:'start'})">${escapeHtml(e.event)}</a>`
+                ).join("")}</div>
+            </div>`
+        ).join("");
+    }
+    container.innerHTML = filtered.map((e, i) => {
         const noData = e.songs === 0 && e.members === 0;
         const plUrl = e.playlist_id ? `https://www.youtube.com/playlist?list=${encodeURIComponent(e.playlist_id)}` : "";
         // YouTubeサムネイル: プレイリスト内動画から取得
@@ -980,7 +1007,7 @@ function renderEventsTab(fiscalYear) {
             }
         }
         return `
-        <div class="band-card">
+        <div class="band-card" id="ev-${i}">
             <div class="band-date">${escapeHtml(e.date || "日付不明")}</div>
             <div class="member-name clickable" style="font-size:1.1rem;margin:0.3rem 0" onclick="showEventDetail('${escapeAttr(e.event)}')">${escapeHtml(e.event)}</div>
             ${thumbHtml}
@@ -1299,16 +1326,16 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("login-screen").classList.remove("hidden");
     });
 
-    // タブ切り替え
-    document.querySelectorAll(".tab").forEach(btn => {
+    // タブ切り替え（トップ＋ボトム両方）
+    document.querySelectorAll(".tab, .btab").forEach(btn => {
         btn.addEventListener("click", () => {
-            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-            btn.classList.add("active");
+            const tabName = btn.dataset.tab;
+            syncTabActive(tabName);
             document.querySelectorAll(".tab-content").forEach(s => s.classList.remove("active"));
-            document.getElementById(btn.dataset.tab).classList.add("active");
-            currentView = { type: "tab", tab: btn.dataset.tab };
-            if (btn.dataset.tab === "board") renderBoardPosts();
-            if (btn.dataset.tab === "overview") {
+            document.getElementById(tabName).classList.add("active");
+            currentView = { type: "tab", tab: tabName };
+            if (tabName === "board") renderBoardPosts();
+            if (tabName === "overview") {
                 const details = document.getElementById("stats-charts");
                 if (details?.open) renderStatsCharts();
             }
