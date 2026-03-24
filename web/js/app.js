@@ -1334,7 +1334,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll(".tab-content").forEach(s => s.classList.remove("active"));
             document.getElementById(tabName).classList.add("active");
             currentView = { type: "tab", tab: tabName };
-            if (tabName === "board") renderBoardPosts();
+            if (tabName === "news") renderBoardPosts();
             if (tabName === "overview") {
                 const details = document.getElementById("stats-charts");
                 if (details?.open) renderStatsCharts();

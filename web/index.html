@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>軽音サークル 演奏統計データベース</title>
-    <meta name="description" content="軽音サークルの演奏統計データベース。メンバー別の出演回数・演奏曲・共演ランキングなどを集計・可視化。">
-    <meta name="keywords" content="軽音サークル, 演奏統計, バンド統計, 演奏データベース, ライブ統計">
-    <meta property="og:title" content="軽音サークル 演奏統計データベース">
-    <meta property="og:description" content="軽音サークルの演奏統計データベース。出演回数・演奏曲・共演ランキングを可視化。">
-    <meta property="og:type" content="website">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
     <link rel="icon" href="img/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="img/favicon-32.png" sizes="32x32">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -48,7 +45,7 @@
             <button class="tab" data-tab="events-tab">イベント一覧</button>
             <button class="tab" data-tab="rankings">ランキング</button>
             <button class="tab" data-tab="search-result">検索結果</button>
-            <button class="tab" data-tab="board">掲示板</button>
+            <button class="tab" data-tab="news">ニュース</button>
             <!-- 管理タブ: 必要時にコメント解除 -->
             <!-- <button class="tab" data-tab="admin-tab">管理</button> -->
         </nav>
@@ -57,7 +54,7 @@
             <button class="btab" data-tab="events-tab"><img class="btab-icon" src="img/tab-event.png" alt=""><span class="btab-label">イベント</span></button>
             <button class="btab" data-tab="rankings"><img class="btab-icon" src="img/tab-ranking.png" alt=""><span class="btab-label">ランキング</span></button>
             <button class="btab" data-tab="search-result"><img class="btab-icon" src="img/tab-search.png" alt=""><span class="btab-label">検索</span></button>
-            <button class="btab" data-tab="board"><img class="btab-icon" src="img/tab-board.png" alt=""><span class="btab-label">掲示板</span></button>
+            <button class="btab" data-tab="news"><img class="btab-icon" src="img/tab-board.png" alt=""><span class="btab-label">ニュース</span></button>
         </nav>
 
         <main>
@@ -227,7 +224,7 @@
                         <dt>技術構成</dt>
                         <dd>Python + JavaScript (static site)</dd>
                     </dl>
-                    <p class="info-note">一部のライブ（2月ライブ、2月POP合同等）は動画概要欄にセットリストが記載されていないため、データが取得できていません。</p>
+                    <p class="info-note">一部のイベントはデータが不完全な場合があります。情報が判明次第、順次更新しています。</p>
                     <p class="info-note">情報をお持ちの方は、ぜひご提供ください！より正確な統計を目指しています。</p>
                     <p class="info-note">情報の誤りや追加データがある方は管理者にご連絡ください。</p>
                 </div>
@@ -235,7 +232,7 @@
                 <!-- ブックマーク案内 -->
                 <div class="info-card bookmark-guide">
                     <h3 class="info-card-title">⚠️このサイトをブックマークしよう</h3>
-                    <p>このサイトは検索エンジンからはとても見つけにくいため、<strong>ブックマーク</strong>または<strong>ホーム画面への追加</strong>をおすすめします。</p>
+                    <p>このサイトは検索エンジンには表示されません。<strong>ブックマーク</strong>または<strong>ホーム画面への追加</strong>をしないとアクセスできなくなります。</p>
                     <p>サイトの後継管理者がいない場合でも、最低でもあと1年はこのサイトは運用を続けます。それまでデータの閲覧・更新が可能です。</p>
                     <p style="margin-top:0.6rem"><a href="bookmark.html" style="color:var(--primary);font-weight:600;font-size:0.9rem">📖 ブックマーク・ホーム画面追加の手順はこちら</a></p>
                 </div>
@@ -300,12 +297,37 @@
                 </div>
                 <div id="member-detail" class="hidden"></div>
             </section>
-            <!-- 掲示板 -->
-            <section id="board" class="tab-content">
-                <div class="board-header">
-                    <h3>掲示板</h3>
-                    <p class="board-description">このデータベースについて意見・質問・要望・一言などお気軽にどうぞ！</p>
+            <!-- ニュース -->
+            <section id="news" class="tab-content">
+                <h3 class="section-title">お知らせ</h3>
+                <div class="news-list">
+                    <div class="news-item">
+                        <span class="news-date">2026-03-24</span>
+                        <span class="news-badge new">NEW</span>
+                        <p class="news-text">新合同ライブ2（12バンド）のデータを追加しました。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-03-17</span>
+                        <p class="news-text">2月ライブ（23バンド）のデータを追加しました。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-03-17</span>
+                        <p class="news-text">スタジオ予約リンク・料金比較を追加しました。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-03-16</span>
+                        <p class="news-text">ブックマーク案内、サイトアイコンを追加しました。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-03-14</span>
+                        <p class="news-text">サーバー認証を導入しました。データの安全性が向上しています。</p>
+                    </div>
                 </div>
+
+                <hr style="margin:1.5rem 0;border-color:var(--border)">
+
+                <h3 class="section-title">掲示板</h3>
+                <p class="board-description">意見・質問・要望・一言などお気軽にどうぞ！</p>
                 <div class="board-form">
                     <input type="text" id="board-name" placeholder="ニックネーム" maxlength="20" autocomplete="off">
                     <textarea id="board-content" placeholder="内容（10文字以上）" rows="3" maxlength="500"></textarea>
@@ -389,12 +411,20 @@
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.9.0</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.9.2</p>
             <p class="visitor-count">今日の訪問者: <span id="visitor-today">-</span>人 ／ 累計: <span id="visitor-total">-</span>人</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v1.9.2 (2026-03-24)</dt>
+                    <dd>
+                        <ul>
+                            <li>新合同ライブ2（12バンド）のデータを追加</li>
+                            <li>「掲示板」タブを「ニュース」タブに変更（お知らせ＋掲示板）</li>
+                            <li>検索エンジンからの非表示化</li>
+                        </ul>
+                    </dd>
                     <dt>v1.9.0 (2026-03-17)</dt>
                     <dd>
                         <ul>
@@ -431,7 +461,7 @@
                     <dd>
                         <ul>
                             <li>検索で見つからない場合「もしかして」候補を表示</li>
-                            <li>SEOメタタグ追加（検索エンジンからアクセス可能に）</li>
+                            <li>検索候補機能の改善</li>
                             <li>ジャンル分類の注意書きを追加</li>
                         </ul>
                     </dd>

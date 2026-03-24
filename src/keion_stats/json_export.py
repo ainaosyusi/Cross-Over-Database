@@ -40,6 +40,7 @@ def export_json(
                 "songs": [{"title": s.title, "artist": s.artist} for s in v.songs],
                 "band_name": v.band_name,
                 "members": [{"grade": m.grade, "name": m.name, "part": m.part} for m in v.members],
+                "view_count": calculator._view_counts.get(v.video_id, 0) or 0,
             }
             for v in sorted(videos, key=lambda x: (x.date or ""), reverse=True)
             if v.songs or v.members

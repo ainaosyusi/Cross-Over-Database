@@ -62,6 +62,19 @@ def main():
                     v.songs = [Song(title=s["title"], artist=s["artist"]) for s in o["songs"]]
                 if "members" in o:
                     v.members = [Member(grade=m["grade"], name=m["name"], part=m.get("part", "")) for m in o["members"]]
+                if "date" in o:
+                    from datetime import date as _date
+                    parts = o["date"].split("-")
+                    v.date = _date(int(parts[0]), int(parts[1]), int(parts[2]))
+        # raw_videosのplaylist_title/upload_dateも上書き
+        for rv in raw_videos:
+            vid = rv.get("video_id", "")
+            if vid in overrides:
+                o = overrides[vid]
+                if "event_name" in o:
+                    rv["playlist_title"] = o["event_name"]
+                if "date" in o:
+                    rv["upload_date"] = o["date"].replace("-", "")
         print(f"上書き処理: {len(overrides)}件")
 
     # 分割動画マージ処理

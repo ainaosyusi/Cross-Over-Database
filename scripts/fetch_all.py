@@ -30,10 +30,21 @@ def main():
     )
 
     if args.force:
-        import glob as globmod
-        for f in globmod.glob(str(RAW_DIR / "pl_*.json")):
-            Path(f).unlink()
-            logging.info("キャッシュ削除: %s", f)
+        if args.url:
+            # --url指定時は該当プレイリストのキャッシュだけ削除
+            import re as _re
+            m = _re.search(r'list=([A-Za-z0-9_-]+)', args.url)
+            if m:
+                target = RAW_DIR / f"pl_{m.group(1)}.json"
+                if target.exists():
+                    target.unlink()
+                    logging.info("キャッシュ削除: %s", target)
+        else:
+            # --from-file時は全キャッシュ削除
+            import glob as globmod
+            for f in globmod.glob(str(RAW_DIR / "pl_*.json")):
+                Path(f).unlink()
+                logging.info("キャッシュ削除: %s", f)
         cache = RAW_DIR / "playlist_cache.json"
         if cache.exists():
             cache.unlink()
