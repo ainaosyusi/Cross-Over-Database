@@ -1,5 +1,12 @@
 # CrossOverデータベース
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?logo=javascript&logoColor=black)
+![PHP](https://img.shields.io/badge/PHP-8.x-777BB4?logo=php&logoColor=white)
+![Chart.js](https://img.shields.io/badge/Chart.js-4.x-FF6384?logo=chartdotjs&logoColor=white)
+![yt-dlp](https://img.shields.io/badge/yt--dlp-latest-FF0000?logo=youtube&logoColor=white)
+![License](https://img.shields.io/badge/License-Private-gray)
+
 大学軽音サークル「Cross Over」のYouTubeプレイリストから演奏データを自動収集・解析し、メンバーの演奏統計をWebダッシュボードとして提供するツールです。
 
 ## 概要
