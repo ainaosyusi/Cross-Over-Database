@@ -20,10 +20,14 @@ function maxGrade(grades) {
     return grades.reduce((best, g) => gradeValue(g) > gradeValue(best) ? g : best, grades[0]);
 }
 function normalizeGrade(g) {
-    // 4年生以上（4, M1, M2, B1, B2）は「4+」に統合
+    if (g === "OB") return "OB";
     return gradeValue(g) >= 4 ? "4+" : g;
 }
-const DISPLAY_GRADES = ["1", "2", "3", "4+"];
+function currentGrade(m) {
+    // current_gradeフィールドがあればそれを使用（推定現在学年）
+    return m.current_grade || maxGrade(m.grades_seen || []);
+}
+const DISPLAY_GRADES = ["1", "2", "3", "4+", "OB"];
 
 // --- 曲インデックス構築 ---
 function buildSongIndex() {
@@ -182,6 +186,62 @@ function renderOverview() {
     document.getElementById("stat-members").textContent = o.total_members;
     document.getElementById("stat-songs").textContent = o.total_songs;
     document.getElementById("stat-artists").textContent = o.total_artists;
+    renderDailyPick();
+}
+
+// --- 今日のおすすめ（日替わり） ---
+const POPULAR_MEMBERS = ["川田悠人", "飯盛蒼唯", "川﨑穂高", "吉岡なるみ", "大橋ゆい"];
+
+function renderDailyPick() {
+    const el = document.getElementById("daily-pick-content");
+    if (!el || !videosData) return;
+
+    // 視聴回数TOP50
+    const top50 = videosData.videos
+        .filter(v => (v.view_count || 0) > 0 && (v.songs?.length || 0) > 0)
+        .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+        .slice(0, 50);
+
+    // 人気メンバーのいるバンド（視聴回数10回以上）
+    const popMemberBands = videosData.videos
+        .filter(v => (v.songs?.length || 0) > 0 && (v.view_count || 0) >= 10)
+        .filter(v => (v.members || []).some(m => POPULAR_MEMBERS.includes(m.name)));
+
+    // 重複を除いて統合
+    const seen = new Set();
+    const candidates = [...top50, ...popMemberBands].filter(v => {
+        if (seen.has(v.video_id)) return false;
+        seen.add(v.video_id);
+        return true;
+    });
+
+    if (!candidates.length) { el.innerHTML = "<p>データ準備中</p>"; return; }
+
+    // 日付から決定的に選ぶ（同じ日は同じバンド）
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const pick = candidates[seed % candidates.length];
+
+    const vidId = extractVideoId(pick.url);
+    const thumb = vidId ? `<img src="https://img.youtube.com/vi/${vidId}/mqdefault.jpg" class="daily-pick-thumb" alt="${escapeHtml(pick.band_name || pick.title)}">` : "";
+    const songs = (pick.songs || []).slice(0, 3).map(s =>
+        `<li><span class="clickable" onclick="showSongDetail('${escapeAttr(s.title)}','${escapeAttr(s.artist)}')">${escapeHtml(s.title)}</span> / <span class="clickable" onclick="showArtistDetail('${escapeAttr(s.artist)}')">${escapeHtml(s.artist)}</span></li>`
+    ).join("");
+    const members = (pick.members || []).slice(0, 8).map(m =>
+        `<span class="clickable" onclick="searchMember('${escapeAttr(m.name)}')">${escapeHtml(m.name)}</span>`
+    ).join(", ");
+
+    el.innerHTML = `
+        <div class="daily-pick">
+            <a href="${escapeHtml(pick.url)}" target="_blank" rel="noopener">${thumb}</a>
+            <div class="daily-pick-info">
+                <div class="daily-pick-name">${escapeHtml(pick.band_name || pick.title)}</div>
+                <div class="daily-pick-meta">${pick.event_name || ""} ／ ${pick.date || ""} ／ 👁 ${(pick.view_count || 0).toLocaleString()}回</div>
+                <ul class="daily-pick-songs">${songs}</ul>
+                <div class="daily-pick-members">${members}</div>
+            </div>
+        </div>
+    `;
 }
 
 // --- ランキング説明 ---
@@ -325,7 +385,7 @@ function applyGradeFilter(items) {
     if (!rankingGradeFilter || !membersData) return items;
     return items.filter(r => {
         const m = membersData.members[r.name];
-        return m && normalizeGrade(maxGrade(m.grades_seen || [])) === rankingGradeFilter;
+        return m && normalizeGrade(currentGrade(m)) === rankingGradeFilter;
     });
 }
 
@@ -334,11 +394,11 @@ function renderGradeStats() {
     if (!membersData) return '<div class="placeholder">データなし</div>';
     const gradeGroups = {};
     for (const [name, m] of Object.entries(membersData.members)) {
-        const grade = normalizeGrade(maxGrade(m.grades_seen || []));
+        const grade = normalizeGrade(currentGrade(m));
         if (!gradeGroups[grade]) gradeGroups[grade] = [];
         gradeGroups[grade].push({ name, ...m });
     }
-    const gradeOrder = ["1", "2", "3", "4+", "?"];
+    const gradeOrder = ["1", "2", "3", "4+", "OB", "?"];
     const grades = Object.keys(gradeGroups).sort((a, b) => gradeOrder.indexOf(a) - gradeOrder.indexOf(b));
     return grades.map(grade => {
         const members = gradeGroups[grade];
@@ -479,7 +539,8 @@ function renderPartStats(items) {
     if (!items.length) return '<div class="placeholder">データなし</div>';
     return items.map(r => {
         const memberList = (r.members || []).map(m => {
-            const gradeLabel = m.max_grade === "?" ? "" : `${m.max_grade}年`;
+            const cg = membersData?.members?.[m.name]?.current_grade || m.max_grade;
+            const gradeLabel = cg === "?" ? "" : cg === "OB" ? "OB" : `${cg}年`;
             return `<span class="clickable part-member" onclick="searchMember('${escapeAttr(m.name)}')">${escapeHtml(m.name)}</span>${gradeLabel ? `<span class="part-grade">${gradeLabel}</span>` : ""}`;
         }).join("");
         return `
@@ -845,7 +906,19 @@ function showMemberDetail(name) {
                 <span>バンド数 <strong>${member.total_bands}</strong></span>
                 <span>曲数 <strong>${member.total_songs}</strong></span>
                 <span>アーティスト <strong>${member.unique_artists}</strong></span>
-                <span>学年 <strong>${(member.grades_seen || []).join(", ")}</strong></span>
+                <span>現在 <strong>${(() => {
+                    if (member.current_grade === "OB") {
+                        const dates = (member.bands || []).map(b => b.date).filter(Boolean).sort();
+                        const last = dates[dates.length - 1] || "";
+                        const m2 = last.match(/^(\d{4})-(\d{2})/);
+                        if (m2) {
+                            const fy = parseInt(m2[2]) >= 4 ? parseInt(m2[1]) : parseInt(m2[1]) - 1;
+                            return `OB（${fy}年度卒）`;
+                        }
+                        return "OB";
+                    }
+                    return (member.current_grade || "?") + "年生";
+                })()}</strong></span>
                 ${debutData?.[name] ? `<span>初出演 <strong>${debutData[name].date || "不明"}</strong></span>` : ""}
             </div>
         </div>

@@ -38,6 +38,7 @@ class MemberSummary:
     total_songs: int
     unique_artists: int
     grades_seen: list[str]
+    current_grade: str  # 推定現在学年
     bands: list[dict]  # 各バンドの詳細情報
     co_member_stats: dict[str, int]  # 共演者名→共演回数
     artist_stats: dict[str, int]  # アーティスト名→演奏回数

@@ -3,10 +3,90 @@
 import json
 import re
 from collections import Counter, defaultdict
+from datetime import date
 from itertools import combinations
 
 from .config import ARTIST_ALIASES_FILE, DATA_DIR
 from .models import MemberSummary, ParsedVideo, Song, Rankings
+
+
+def _academic_year(d: date) -> int:
+    """日付から年度を返す（4月始まり）"""
+    return d.year if d.month >= 4 else d.year - 1
+
+
+def infer_current_grade(name: str, videos: list[ParsedVideo], today: date | None = None) -> str:
+    """
+    メンバーの現在の学年を推定する。
+
+    ロジック:
+    1. 動画出演履歴から (日付, 学年) のペアを全て取得
+    2. 最新の出演記録の学年を基準に、経過年度分を加算
+    3. 4年超え → "OB"
+    4. 留年/休学: 後の出演で学年が上がっていない場合はその学年を信用
+    """
+    if today is None:
+        today = date.today()
+
+    current_ay = _academic_year(today)
+
+    # (日付, 学年) のペアを収集
+    appearances: list[tuple[date, str]] = []
+    for v in videos:
+        if v.date is None:
+            continue
+        for m in v.members:
+            if m.name == name and m.grade.isdigit():
+                appearances.append((v.date, m.grade))
+
+    if not appearances:
+        return "?"
+
+    # 日付順にソート
+    appearances.sort(key=lambda x: x[0])
+
+    # 最新の出演記録を基準にする
+    latest_date, latest_grade = appearances[-1]
+    latest_grade_int = int(latest_grade)
+    latest_ay = _academic_year(latest_date)
+
+    # 経過年度
+    years_passed = current_ay - latest_ay
+
+    # 留年チェック: 同一人物で学年が下がる or 据え置きのケースを検出
+    # 例: 2024年度に2年、2025年度にも2年 → 留年
+    grade_by_ay: dict[int, int] = {}
+    for d, g in appearances:
+        ay = _academic_year(d)
+        g_int = int(g)
+        # 同年度の最大学年を記録
+        if ay not in grade_by_ay or g_int > grade_by_ay[ay]:
+            grade_by_ay[ay] = g_int
+
+    # 学年進行が正常か確認（各年度で1ずつ上がるべき）
+    # 据え置きや戻りがあれば留年と判断
+    sorted_ays = sorted(grade_by_ay.keys())
+    actual_latest_grade = latest_grade_int
+
+    if len(sorted_ays) >= 2:
+        # 最後の2年度を比較
+        prev_ay = sorted_ays[-2]
+        last_ay = sorted_ays[-1]
+        expected = grade_by_ay[prev_ay] + (last_ay - prev_ay)
+        actual = grade_by_ay[last_ay]
+        if actual < expected:
+            # 留年: 推定もそのまま据え置き
+            actual_latest_grade = actual
+
+    # 推定現在学年
+    inferred = actual_latest_grade + years_passed
+
+    if inferred > 4:
+        return "OB"
+    elif inferred < 1:
+        return "?"
+    else:
+        return str(inferred)
 
 
 def _grade_key(grade: str) -> int:
@@ -85,8 +165,8 @@ class StatsCalculator:
                 "co_members": co_members,
             })
 
-        # 日付でソート
-        band_details.sort(key=lambda b: b["date"] or "0000-00-00")
+        # 日付降順でソート（新しいバンドが上）
+        band_details.sort(key=lambda b: b["date"] or "0000-00-00", reverse=True)
 
         return MemberSummary(
             name=name,
@@ -94,6 +174,7 @@ class StatsCalculator:
             total_songs=sum(len(v.songs) for v in bands),
             unique_artists=len({s.artist for v in bands for s in v.songs}),
             grades_seen=grades_seen,
+            current_grade=infer_current_grade(name, self.videos),
             bands=band_details,
             co_member_stats=self._calc_co_members(name, bands),
             artist_stats=self._calc_artist_stats(bands),
@@ -261,15 +342,18 @@ class StatsCalculator:
 
     def _rank_event_stats(self) -> list[dict]:
         """イベント（プレイリスト）別統計"""
-        event_data: dict[str, dict] = {}
+        event_data: dict[tuple, dict] = {}
         for v in self.videos:
             pl_title = self._playlist_titles.get(v.video_id, "")
             if not pl_title:
                 continue
-            if pl_title not in event_data:
-                event_data[pl_title] = {
+            pl_id = self._playlist_ids.get(v.video_id, "")
+            # 同名イベントを年度別に区別するためplaylist_idも含めたキーで管理
+            key = (pl_title, pl_id)
+            if key not in event_data:
+                event_data[key] = {
                     "event": pl_title,
-                    "playlist_id": self._playlist_ids.get(v.video_id, ""),
+                    "playlist_id": pl_id,
                     "bands": 0,
                     "songs": 0,
                     "members": set(),
@@ -277,7 +361,7 @@ class StatsCalculator:
                     "date": v.date.isoformat() if v.date else None,
                     "total_views": 0,
                 }
-            ed = event_data[pl_title]
+            ed = event_data[key]
             ed["bands"] += 1
             ed["songs"] += len(v.songs)
             for m in v.members:
@@ -302,7 +386,16 @@ class StatsCalculator:
                 "artists": len(ed["artists"]),
                 "total_views": ed["total_views"],
             })
-        result.sort(key=lambda x: x["date"] or "0000", reverse=True)
+        # 日付降順でソート（上が新しい、下が古い）
+        # 同日のイベントは2日目→1日目の順（上が2日目、下が1日目）
+        def _day_num(ed: dict) -> int:
+            m = re.search(r'([1-9一二三四])\s*日目', ed["event"])
+            if not m:
+                return 0
+            s = m.group(1)
+            return {"一": 1, "二": 2, "三": 3, "四": 4}.get(s, int(s) if s.isdigit() else 0)
+
+        result.sort(key=lambda x: (x["date"] or "0000", _day_num(x)), reverse=True)
         return result
 
     def _rank_view_count_members(self) -> list[dict]:

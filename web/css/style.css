@@ -376,83 +376,153 @@ main {
 
 .band-link:hover { text-decoration: underline; }
 
-/* ログイン画面 */
+/* ログイン画面（Bandcamp風: 黒+黄色アクセント、回転レコード盤） */
 .login-container {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, var(--primary) 100%);
-    padding: 1rem;
+    background: #1a1a1a;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.login-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 8px,
+        rgba(255,212,0,0.03) 8px,
+        rgba(255,212,0,0.03) 9px
+    );
+    pointer-events: none;
 }
 
 .login-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    padding: 3rem 2.5rem;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    background: #000;
+    border: 3px solid #FFD400;
+    border-radius: 0;
+    padding: 3.5rem 2.5rem;
     text-align: center;
-    max-width: 380px;
+    max-width: 440px;
     width: 100%;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
 
-.login-icon {
-    font-size: 3rem;
-    margin-bottom: 0.5rem;
+.record-disc {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #FFD400 12%, #1a1a1a 13%, #1a1a1a 18%, #2a2a2a 19%, #2a2a2a 50%, #1a1a1a 51%);
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 0 0 4px #FFD400;
+    animation: record-spin 8s linear infinite;
+}
+
+@keyframes record-spin {
+    to { transform: rotate(360deg); }
 }
 
 .login-card h1 {
-    font-size: 1.3rem;
-    color: var(--text);
-    margin-bottom: 0.3rem;
+    font-size: 1.75rem;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    margin-bottom: 0;
+    text-transform: uppercase;
+    color: #FFD400;
+}
+
+.login-line {
+    width: 60px;
+    height: 4px;
+    background: #FFD400;
+    margin: 0.75rem auto 1rem;
 }
 
 .login-subtitle {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-bottom: 2rem;
+    color: #ccc;
+    font-size: 0.8rem;
+    margin-bottom: 2.5rem;
+    letter-spacing: 0.05em;
 }
 
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 0;
+}
+
+.login-label {
+    display: block;
+    text-align: left;
+    font-size: 0.7rem;
+    color: #FFD400;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 700;
 }
 
 .login-form input {
-    padding: 0.8rem 1rem;
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
+    padding: 0.85rem 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #444;
+    border-radius: 0;
+    color: #fff;
     font-size: 1rem;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
     outline: none;
     transition: border-color 0.2s;
-    text-align: center;
+    text-align: left;
+    margin-bottom: 1rem;
 }
 
 .login-form input:focus {
-    border-color: var(--primary);
+    border-bottom-color: #FFD400;
 }
 
 #login-btn {
-    padding: 0.8rem;
-    background: var(--primary);
-    color: #fff;
+    padding: 1rem;
+    background: #FFD400;
+    color: #000;
     border: none;
-    border-radius: var(--radius);
-    font-size: 1rem;
-    font-weight: bold;
+    border-radius: 0;
+    font-size: 0.85rem;
+    font-weight: 900;
+    letter-spacing: 0.3em;
     cursor: pointer;
-    transition: background 0.2s;
+    text-transform: uppercase;
+    transition: background 0.15s;
+    margin-top: 0.5rem;
 }
 
 #login-btn:hover {
-    background: var(--primary-light);
+    background: #fff;
 }
 
 .login-error {
-    color: #e53935;
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
+    color: #ff5252;
+    font-size: 0.75rem;
+    margin-top: 1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.login-footer-note {
+    margin-top: 2rem;
+    font-size: 0.7rem;
+    color: #555;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
 }
 
 /* プレースホルダ */
@@ -488,6 +558,20 @@ footer {
 }
 
 /* ページ情報カード */
+#daily-pick-card { margin-top: 0; background: linear-gradient(135deg, #fff9e6 0%, #fff2cc 100%); border-left: 4px solid #f1c40f; }
+.daily-pick { display: flex; gap: 0.8rem; align-items: flex-start; }
+.daily-pick-thumb { width: 140px; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+.daily-pick-info { flex: 1; min-width: 0; }
+.daily-pick-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.2rem; }
+.daily-pick-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+.daily-pick-songs { list-style: none; padding: 0; margin: 0 0 0.4rem; font-size: 0.82rem; }
+.daily-pick-songs li { padding: 0.1rem 0; }
+.daily-pick-members { font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; }
+@media (max-width: 480px) {
+    .daily-pick { flex-direction: column; }
+    .daily-pick-thumb { width: 100%; }
+}
+
 .info-card {
     background: #f0f3f8;
     border-radius: var(--radius);

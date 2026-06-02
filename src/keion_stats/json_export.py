@@ -61,6 +61,7 @@ def export_json(
             "total_songs": s.total_songs,
             "unique_artists": s.unique_artists,
             "grades_seen": s.grades_seen,
+            "current_grade": s.current_grade,
             "bands": s.bands,
             "co_member_stats": s.co_member_stats,
             "artist_stats": s.artist_stats,

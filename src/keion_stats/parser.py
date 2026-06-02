@@ -310,6 +310,18 @@ def parse_description(
                     members.append(Member(grade=grade, name=n, part=norm_part))
             continue
 
+        # 番号なし「曲名/アーティスト」形式（トツゲキライブ等）
+        # 学年・パートを含まない、/区切りの行を曲として扱う
+        if '/' in line and not re.search(r'\d+\s*年|同期|演奏時間|出演希望', line):
+            parts = line.split('/', 1)
+            if len(parts) == 2:
+                t = parts[0].strip()
+                a = parts[1].strip()
+                if t and a and len(t) < 60 and len(a) < 60 and not t[0].isdigit():
+                    a = artist_aliases.get(a, a)
+                    songs.append(Song(title=t, artist=a))
+                    continue
+
         # パート名+名前のみ（学年なし）: "Vo.大橋ゆい", "Gt. 蛯名了一"
         # "Vo / Gt. 佐々木一真", "Ba.Vo. 安田龍平" 等も対応
         if re.match(r'^[A-Za-z]', line):

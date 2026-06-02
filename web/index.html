@@ -11,21 +11,24 @@
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="CrossOver DB">
-    <link rel="stylesheet" href="css/style.css?v=1.9.2">
+    <link rel="stylesheet" href="css/style.css?v=1.9.8">
 </head>
 <body>
     <!-- ログイン画面 -->
     <div id="login-screen" class="hidden">
         <div class="login-container">
             <div class="login-card">
-                <div class="login-icon">&#9835;</div>
-                <h1>軽音サークル 演奏統計</h1>
-                <p class="login-subtitle">メンバー専用ツール</p>
+                <div class="record-disc"></div>
+                <h1>CrossOver</h1>
+                <div class="login-line"></div>
+                <p class="login-subtitle">DATABASE — 軽音サークル演奏記録</p>
                 <div class="login-form">
-                    <input type="password" id="password-input" placeholder="パスワードを入力" autocomplete="off">
-                    <button id="login-btn">ログイン</button>
+                    <label class="login-label">PASSWORD</label>
+                    <input type="password" id="password-input" autocomplete="off">
+                    <button id="login-btn">ENTER</button>
                 </div>
                 <p id="login-error" class="login-error hidden">パスワードが違います</p>
+                <p class="login-footer-note">MEMBERS ONLY</p>
             </div>
         </div>
     </div>
@@ -60,23 +63,10 @@
         <main>
             <!-- 全体統計 -->
             <section id="overview" class="tab-content active">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-videos">-</div>
-                        <div class="stat-label">動画数</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-members">-</div>
-                        <div class="stat-label">メンバー数</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-songs">-</div>
-                        <div class="stat-label">総演奏曲数</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-artists">-</div>
-                        <div class="stat-label">アーティスト数</div>
-                    </div>
+                <!-- 今日のおすすめ -->
+                <div class="info-card" id="daily-pick-card">
+                    <h3 class="info-card-title">🎵 今日のおすすめ</h3>
+                    <div id="daily-pick-content"></div>
                 </div>
 
                 <!-- 全体統計グラフ -->
@@ -259,6 +249,25 @@
                         <dd>パートごとの出演回数と担当メンバー一覧。タップで展開。</dd>
                     </dl>
                 </div>
+
+                <div class="stats-grid" style="margin-top:1.5rem">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-videos">-</div>
+                        <div class="stat-label">動画数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-members">-</div>
+                        <div class="stat-label">メンバー数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-songs">-</div>
+                        <div class="stat-label">総演奏曲数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-artists">-</div>
+                        <div class="stat-label">アーティスト数</div>
+                    </div>
+                </div>
             </section>
 
             <!-- イベント一覧 -->
@@ -302,8 +311,28 @@
                 <h3 class="section-title">お知らせ</h3>
                 <div class="news-list">
                     <div class="news-item">
-                        <span class="news-date">2026-03-24</span>
+                        <span class="news-date">2026-06-03</span>
                         <span class="news-badge new">NEW</span>
+                        <p class="news-text">トツゲキライブ1日目（21バンド・0曲）のデータを追加しました。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-05-13</span>
+                        <p class="news-text">5月ライブ2日目（16バンド・29曲）のデータを追加しました。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-04-21</span>
+                        <p class="news-text">4月ライブ　2日目（11バンド・21曲）のデータを追加しました。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-03-31</span>
+                        <p class="news-text">2026卒業ライブ（16バンド・30曲）のデータを追加しました。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-03-31</span>
+                        <p class="news-text">全1,139動画の視聴回数を最新に更新しました（総視聴回数: 85,574回）。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-03-24</span>
                         <p class="news-text">新合同ライブ2（12バンド）のデータを追加しました。</p>
                     </div>
                     <div class="news-item">
@@ -411,12 +440,56 @@
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.9.2</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v1.9.8</p>
             <p class="visitor-count">今日の訪問者: <span id="visitor-today">-</span>人 ／ 累計: <span id="visitor-total">-</span>人</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v1.9.8 (2026-06-01)</dt>
+                    <dd>
+                        <ul>
+                            <li>ログイン画面のデザインを刷新</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.9.7 (2026-06-01)</dt>
+                    <dd>
+                        <ul>
+                            <li>新ライブのデータを追加（2件）</li>
+                            <li>概要欄の番号なし曲表記に対応</li>
+                            <li>表記揺れ・誤登録メンバーの修正</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.9.6 (2026-05-13)</dt>
+                    <dd>
+                        <ul>
+                            <li>5月ライブ（1日目・2日目）のデータを追加</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.9.5 (2026-04-21)</dt>
+                    <dd>
+                        <ul>
+                            <li>ホーム画面に「今日のおすすめ」コーナーを追加（日替わり）</li>
+                            <li>全体統計を画面下部に移動</li>
+                            <li>表記揺れの統合</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.9.4 (2026-04-21)</dt>
+                    <dd>
+                        <ul>
+                            <li>4月ライブ（1日目・2日目）のデータを追加</li>
+                            <li>OBメンバーに引退年度を表示</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.9.3 (2026-03-31)</dt>
+                    <dd>
+                        <ul>
+                            <li>2026卒業ライブ（16バンド）のデータを追加</li>
+                            <li>全動画の視聴回数を最新に更新</li>
+                            <li>メンバーの現在学年を自動推定する機能を追加</li>
+                            <li>卒業メンバーをOBとして表示</li>
+                        </ul>
+                    </dd>
                     <dt>v1.9.2 (2026-03-24)</dt>
                     <dd>
                         <ul>
@@ -598,8 +671,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="js/app.js?v=1.9.2"></script>
-    <script src="js/search.js?v=1.9.2"></script>
-    <script src="js/admin.js?v=1.9.2"></script>
+    <script src="js/app.js?v=1.9.8"></script>
+    <script src="js/search.js?v=1.9.8"></script>
+    <script src="js/admin.js?v=1.9.8"></script>
 </body>
 </html>
