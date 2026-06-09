@@ -39,6 +39,17 @@
   Header set Cache-Control "private, no-store"
 </filesMatch>
 
+# DB・スキーマファイルへの直接アクセスを禁止
+<filesMatch "\.(sqlite|sqlite3|db|sql)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+  </IfModule>
+</filesMatch>
+
 # セキュリティヘッダー
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"

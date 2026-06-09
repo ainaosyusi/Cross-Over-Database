@@ -24,5 +24,39 @@ web/js/auth.js
 web/data/config.json
 web/api/config.php
 
+# サーバー側で自動生成されるデータ（本番データを壊さないよう除外）
+web/api/counter_data.json
+web/api/counter_total.json
+web/api/board_data.json
+web/api/account_data.sqlite
+web/api/account_data.sqlite-journal
+
 # テスト（実名を含む）
 tests/
+
+# 開発・運用ガイド（内部URL・パスワード等を含む）
+docs/
+
+# 診断ファイル（情報漏洩元）
+web/api/diag.php
+
+# 学籍番号情報・スクショ・PDF等
+学籍番号*.md
+スクリーンショット*
+S__*.jpg
+セトリ/
+タイテ/
+templates/
+taite-bot/
+blog_post.md
+
+# Claude Code 個人設定
+.claude/
+
+# taite-bot関連ファイル（別プロジェクト）
+scripts/discord_bot.py
+src/keion_stats/discord_parser.py
+src/keion_stats/setlist_excel.py
+src/keion_stats/setlist_pdf.py
+src/keion_stats/timetable_excel.py
+src/keion_stats/timetable_pdf.py

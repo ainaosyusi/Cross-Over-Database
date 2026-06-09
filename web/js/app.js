@@ -166,6 +166,8 @@ async function loadData() {
             if (el) el.textContent = c.today || 0;
             if (el2) el2.textContent = c.total || 0;
         }).catch(() => {});
+        // アカウント状態
+        refreshAccountState();
     } catch (e) {
         if (e.message === "auth") {
             // セッション切れ → ログイン画面に戻す
@@ -730,7 +732,7 @@ function showEventDetail(eventName) {
     pushNav(_currentNavState());
     _showEventDetailNoHistory(eventName);
 }
-function _showEventDetailNoHistory(eventName) {
+async function _showEventDetailNoHistory(eventName) {
     currentView = { type: "event", eventName };
     if (!videosData) return;
     const eventVideos = videosData.videos
@@ -741,6 +743,14 @@ function _showEventDetailNoHistory(eventName) {
         ? `https://www.youtube.com/playlist?list=${encodeURIComponent(eventInfo.playlist_id)}`
         : "";
 
+    const eventGroup = normalizeEventGroup(eventName);
+    // 投票状況を取得（期限切れチェック）
+    let voteStatus = null;
+    try {
+        const r = await fetch("api/vote.php?action=status&event=" + encodeURIComponent(eventGroup));
+        if (r.ok) voteStatus = await r.json();
+    } catch (e) { /* 取得失敗時はボタン非表示 */ }
+    const voteClosed = !voteStatus || voteStatus.closed;
     const bandCards = eventVideos.map((v, i) => {
         const songs = (v.songs || []).map(s =>
             `<li><span class="clickable" onclick="showSongDetail('${escapeAttr(s.title)}','${escapeAttr(s.artist)}')">${escapeHtml(s.title)}</span> / <span class="clickable" onclick="showArtistDetail('${escapeAttr(s.artist)}')">${escapeHtml(s.artist)}</span></li>`
@@ -751,12 +761,28 @@ function _showEventDetailNoHistory(eventName) {
         const bName = v.band_name || v.title || "";
         const bandLabel = bName ? `<span class="band-name-tag">${escapeHtml(bName)}</span>` : "";
         const noData = !v.songs.length && !v.members.length;
+        const vid = v.video_id;
+        const isFav = userFavorites.has(vid);
+        const isOwnBand = accountUser && (v.members || []).some(m => m.name === accountUser.real_name);
+        const favBtn = `<button class="vid-action-btn fav-btn ${isFav ? "active" : ""}" onclick="toggleFavorite('${escapeAttr(vid)}', this)">${isFav ? "★" : "☆"} お気に入り</button>`;
+        // 投票ボタン: 期限切れ or 投票不可なら非表示、自分のバンドのみ「投票不可」表示
+        let voteBtn = "";
+        if (!voteClosed) {
+            if (isOwnBand) {
+                voteBtn = `<button class="vid-action-btn" disabled title="自分のバンドには投票不可">投票不可</button>`;
+            } else {
+                voteBtn = `<button class="vid-action-btn vote-btn" onclick="castVote('${escapeAttr(vid)}','${escapeAttr(eventGroup)}')">▲ 投票</button>`;
+            }
+        }
+        const commentBtn = `<button class="vid-action-btn" onclick="toggleVideoComments('${escapeAttr(vid)}', this)">💬 コメント</button>`;
         return `<div class="band-card">
             <div class="band-date">${i + 1}. ${bandLabel}</div>
             ${noData ? `<div class="no-data-notice">セトリ不明</div>` : `
             <ul class="band-songs">${songs || "<li>セトリ不明</li>"}</ul>
             <div class="band-members">メンバー: ${memberList || "不明"}</div>`}
             ${videoLinks(v)}
+            <div class="vid-actions">${voteBtn}${favBtn}${commentBtn}</div>
+            <div class="comment-section hidden" id="cs-${vid}"></div>
         </div>`;
     }).join("");
 
@@ -1457,3 +1483,499 @@ document.addEventListener("DOMContentLoaded", () => {
     // 管理タブ初期化
     initAdminTab();
 });
+
+// =========================
+// アカウント機能
+// =========================
+
+let accountUser = null;
+let userFavorites = new Set();
+
+async function refreshAccountState() {
+    try {
+        const res = await fetch("api/account.php?action=me");
+        const data = await res.json();
+        if (data.logged_in) {
+            accountUser = data.user;
+            document.getElementById("account-guest").classList.add("hidden");
+            const li = document.getElementById("account-logged-in");
+            if (li) li.classList.remove("hidden");
+            document.getElementById("acc-name").textContent = data.user.real_name;
+            const eml = document.getElementById("acc-email-display");
+            if (eml) eml.textContent = data.user.email;
+            const nmInput = document.getElementById("mp-name-input");
+            if (nmInput) nmInput.value = data.user.real_name;
+            // お気に入りを取得
+            const fres = await fetch("api/favorite.php");
+            const fdata = await fres.json();
+            userFavorites = new Set((fdata.favorites || []).map(f => f.video_id));
+        } else {
+            accountUser = null;
+            document.getElementById("account-guest").classList.remove("hidden");
+            const li = document.getElementById("account-logged-in");
+            if (li) li.classList.add("hidden");
+            userFavorites = new Set();
+        }
+    } catch (e) {
+        console.warn("account state fetch failed", e);
+    }
+}
+
+// アカウントタブ切替（ログイン/登録）
+document.addEventListener("click", e => {
+    const t = e.target.closest(".acc-tab");
+    if (!t) return;
+    document.querySelectorAll(".acc-tab").forEach(b => b.classList.remove("active"));
+    t.classList.add("active");
+    const mode = t.dataset.acc;
+    document.getElementById("acc-login-form").classList.toggle("hidden", mode !== "login");
+    document.getElementById("acc-register-form").classList.toggle("hidden", mode !== "register");
+    document.getElementById("acc-verify-form").classList.add("hidden");
+});
+
+async function accountRegister() {
+    const email = document.getElementById("acc-reg-email").value.trim();
+    const real_name = document.getElementById("acc-reg-name").value.trim();
+    const password = document.getElementById("acc-reg-password").value;
+    const errEl = document.getElementById("acc-reg-error");
+    errEl.classList.add("hidden");
+    if (!document.getElementById("acc-consent-check").checked) {
+        errEl.textContent = "利用規約とプライバシーポリシーに同意してください";
+        errEl.classList.remove("hidden");
+        return;
+    }
+    try {
+        const res = await fetch("api/account.php?action=register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, real_name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "失敗");
+        // 認証コード入力へ
+        document.getElementById("acc-register-form").classList.add("hidden");
+        document.getElementById("acc-login-form").classList.add("hidden");
+        document.getElementById("acc-verify-form").classList.remove("hidden");
+        document.getElementById("acc-verify-form").dataset.email = email;
+        alert(data.message);
+    } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove("hidden");
+    }
+}
+
+async function accountVerify() {
+    const email = document.getElementById("acc-verify-form").dataset.email;
+    const code = document.getElementById("acc-verify-code").value.trim();
+    const errEl = document.getElementById("acc-verify-error");
+    errEl.classList.add("hidden");
+    try {
+        const res = await fetch("api/account.php?action=verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, code }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "失敗");
+        alert("認証完了！ログインしました");
+        await refreshAccountState();
+    } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove("hidden");
+    }
+}
+
+async function accountResend() {
+    const email = document.getElementById("acc-verify-form").dataset.email;
+    const errEl = document.getElementById("acc-verify-error");
+    errEl.classList.add("hidden");
+    try {
+        const res = await fetch("api/account.php?action=resend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "失敗");
+        alert(data.message);
+    } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove("hidden");
+    }
+}
+
+async function accountLogin() {
+    const email = document.getElementById("acc-login-email").value.trim();
+    const password = document.getElementById("acc-login-password").value;
+    const errEl = document.getElementById("acc-login-error");
+    errEl.classList.add("hidden");
+    try {
+        const res = await fetch("api/account.php?action=login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            if (data.need_verify) {
+                document.getElementById("acc-login-form").classList.add("hidden");
+                document.getElementById("acc-verify-form").classList.remove("hidden");
+                document.getElementById("acc-verify-form").dataset.email = email;
+                alert("メール認証が未完了です。コードを入力してください");
+                return;
+            }
+            throw new Error(data.error || "ログイン失敗");
+        }
+        await refreshAccountState();
+    } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove("hidden");
+    }
+}
+
+async function accountLogout() {
+    await fetch("api/account.php?action=logout", { method: "POST" });
+    await refreshAccountState();
+}
+
+// =========================
+// 投票・お気に入り・コメント
+// =========================
+
+// イベントグループ名（日目除去）
+function normalizeEventGroup(eventName) {
+    return (eventName || "").replace(/\s*[\(（]?[1-9一二三四]\s*日目[\)）]?/u, "").trim();
+}
+
+async function toggleFavorite(videoId, btn) {
+    if (!accountUser) {
+        alert("お気に入りはアカウントログイン後に利用できます");
+        switchTab("news");
+        return;
+    }
+    try {
+        const res = await fetch("api/favorite.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ video_id: videoId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        if (data.state === "added") {
+            userFavorites.add(videoId);
+            if (btn) btn.classList.add("active");
+        } else {
+            userFavorites.delete(videoId);
+            if (btn) btn.classList.remove("active");
+        }
+    } catch (e) {
+        alert("失敗: " + e.message);
+    }
+}
+
+async function castVote(videoId, eventGroup) {
+    if (!accountUser) {
+        alert("投票はアカウントログイン後に利用できます");
+        switchTab("news");
+        return;
+    }
+    if (!confirm("この動画に投票します。投票は変更できません。よろしいですか？")) return;
+    try {
+        const res = await fetch("api/vote.php?action=vote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ video_id: videoId, event_group: eventGroup }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        alert(`投票完了！残り ${data.remaining} 票`);
+        // 再描画
+        if (typeof showVideoDetail === "function") showVideoDetail(videoId);
+    } catch (e) {
+        alert("投票失敗: " + e.message);
+    }
+}
+
+async function submitComment(videoId) {
+    if (!accountUser) {
+        alert("コメントはアカウントログイン後に利用できます");
+        switchTab("news");
+        return;
+    }
+    const ta = document.getElementById("vid-comment-input");
+    if (!ta) return;
+    const content = ta.value.trim();
+    if (!content) return;
+    try {
+        const res = await fetch("api/comment.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ video_id: videoId, content }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        ta.value = "";
+        loadComments(videoId);
+    } catch (e) {
+        alert("失敗: " + e.message);
+    }
+}
+
+async function loadComments(videoId) {
+    try {
+        const res = await fetch("api/comment.php?video_id=" + encodeURIComponent(videoId));
+        const data = await res.json();
+        const el = document.getElementById("vid-comment-list");
+        if (!el) return;
+        if (!data.comments || !data.comments.length) {
+            el.innerHTML = '<p class="placeholder" style="padding:1rem">まだコメントはありません</p>';
+            return;
+        }
+        el.innerHTML = data.comments.map(c =>
+            `<div class="comment-item">
+                <div class="comment-meta"><strong>${escapeHtml(c.author)}</strong> <span class="comment-date">${escapeHtml(c.created_at)}</span></div>
+                <div class="comment-content">${escapeHtml(c.content)}</div>
+            </div>`
+        ).join("");
+    } catch (e) {
+        console.warn("comments load failed", e);
+    }
+}
+
+function switchTab(tabId) {
+    document.querySelectorAll(".tab, .btab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(s => s.classList.remove("active"));
+    document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(b => b.classList.add("active"));
+    document.getElementById(tabId)?.classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// お気に入り一覧表示
+function showFavoritesPage() {
+    if (!accountUser) return;
+    if (!videosData) return;
+    const favIds = Array.from(userFavorites);
+    const favs = videosData.videos.filter(v => favIds.includes(v.video_id));
+    const container = document.getElementById("search-result");
+    if (!container) return;
+    container.innerHTML = `
+        <h3 class="section-title">お気に入り (${favs.length})</h3>
+        ${favs.length === 0 ? '<p class="placeholder">お気に入りはまだありません</p>' :
+            favs.map(v => {
+                const vidId = v.video_id;
+                const thumb = `<img src="https://img.youtube.com/vi/${vidId}/mqdefault.jpg" class="event-card-thumb">`;
+                return `<div class="band-card">
+                    <a href="${escapeHtml(v.url)}" target="_blank" rel="noopener">${thumb}</a>
+                    <div class="member-name clickable" onclick="showVideoDetail('${escapeAttr(vidId)}')">${escapeHtml(v.band_name || v.title)}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted)">${v.event_name || ""} ／ ${v.date || ""}</div>
+                </div>`;
+            }).join("")
+        }
+    `;
+    switchTab("search-result");
+}
+
+// 動画コメントのトグル表示
+async function toggleVideoComments(videoId, btn) {
+    const sec = document.getElementById("cs-" + videoId);
+    if (!sec) return;
+    if (!sec.classList.contains("hidden")) {
+        sec.classList.add("hidden");
+        return;
+    }
+    sec.classList.remove("hidden");
+    sec.innerHTML = `
+        <div class="comment-form">
+            ${accountUser ? `
+                <textarea id="vid-comment-input-${videoId}" placeholder="コメントを入力（500文字まで）" maxlength="500"></textarea>
+                <button onclick="submitVideoComment('${escapeAttr(videoId)}')">投稿</button>
+            ` : `<p class="acc-hint">アカウントログイン後に投稿できます</p>`}
+        </div>
+        <div id="vid-comment-list-${videoId}" class="comment-list"></div>
+    `;
+    await reloadVideoComments(videoId);
+}
+
+async function reloadVideoComments(videoId) {
+    try {
+        const res = await fetch("api/comment.php?video_id=" + encodeURIComponent(videoId));
+        const data = await res.json();
+        const el = document.getElementById("vid-comment-list-" + videoId);
+        if (!el) return;
+        if (!data.comments || !data.comments.length) {
+            el.innerHTML = '<p class="placeholder" style="padding:0.6rem">まだコメントはありません</p>';
+            return;
+        }
+        el.innerHTML = data.comments.map(c => {
+            const isMine = accountUser && Number(c.user_id) === Number(accountUser.id);
+            const deleteBtn = isMine
+                ? `<button class="comment-delete-btn" onclick="deleteComment(${c.id}, '${escapeAttr(videoId)}')">削除</button>`
+                : "";
+            return `<div class="comment-item">
+                <div class="comment-header">
+                    <span class="comment-author">${escapeHtml(c.author)}</span>
+                    <span class="comment-date">${escapeHtml(c.created_at)}</span>
+                    ${deleteBtn}
+                </div>
+                <div class="comment-content">${escapeHtml(c.content)}</div>
+            </div>`;
+        }).join("");
+    } catch (e) { console.warn("comments load failed", e); }
+}
+
+async function deleteComment(commentId, videoId) {
+    if (!confirm("このコメントを削除しますか？")) return;
+    try {
+        const res = await fetch("api/comment.php?id=" + commentId, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        reloadVideoComments(videoId);
+    } catch (e) {
+        alert("削除失敗: " + e.message);
+    }
+}
+
+async function submitVideoComment(videoId) {
+    const ta = document.getElementById("vid-comment-input-" + videoId);
+    if (!ta) return;
+    const content = ta.value.trim();
+    if (!content) return;
+    try {
+        const res = await fetch("api/comment.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ video_id: videoId, content }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        ta.value = "";
+        reloadVideoComments(videoId);
+    } catch (e) {
+        alert("失敗: " + e.message);
+    }
+}
+
+// === マイページ・パスワードリセット ===
+function showAccForm(mode) {
+    document.querySelectorAll(".acc-form").forEach(f => f.classList.add("hidden"));
+    const targetId = {
+        login: "acc-login-form",
+        register: "acc-register-form",
+        verify: "acc-verify-form",
+        forgot: "acc-forgot-form",
+        reset: "acc-reset-form",
+    }[mode];
+    if (targetId) document.getElementById(targetId).classList.remove("hidden");
+    document.querySelectorAll(".acc-tab").forEach(b => b.classList.remove("active"));
+    if (mode === "login" || mode === "forgot") document.querySelector('[data-acc="login"]')?.classList.add("active");
+    if (mode === "register") document.querySelector('[data-acc="register"]')?.classList.add("active");
+}
+
+function toggleMypageSection(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle("hidden");
+}
+
+async function updateProfileName() {
+    const real_name = document.getElementById("mp-name-input").value.trim();
+    const msg = document.getElementById("mp-name-msg");
+    msg.textContent = "";
+    try {
+        const res = await fetch("api/account.php?action=update_profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ real_name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        msg.textContent = "✓ 更新しました";
+        await refreshAccountState();
+    } catch (e) {
+        msg.textContent = "失敗: " + e.message;
+    }
+}
+
+async function changePassword() {
+    const current = document.getElementById("mp-curpw").value;
+    const next = document.getElementById("mp-newpw").value;
+    const msg = document.getElementById("mp-pw-msg");
+    msg.textContent = "";
+    try {
+        const res = await fetch("api/account.php?action=change_password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ current_password: current, new_password: next }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        msg.textContent = "✓ パスワードを変更しました";
+        document.getElementById("mp-curpw").value = "";
+        document.getElementById("mp-newpw").value = "";
+    } catch (e) {
+        msg.textContent = "失敗: " + e.message;
+    }
+}
+
+async function deleteAccount() {
+    if (!confirm("本当にアカウントを削除しますか？投票・コメント・お気に入りも完全削除され、元に戻せません。")) return;
+    const password = document.getElementById("mp-delete-pw").value;
+    const msg = document.getElementById("mp-delete-msg");
+    msg.textContent = "";
+    try {
+        const res = await fetch("api/account.php?action=delete_account", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        alert(data.message || "削除しました");
+        await refreshAccountState();
+    } catch (e) {
+        msg.textContent = "失敗: " + e.message;
+    }
+}
+
+async function accountForgotPassword() {
+    const email = document.getElementById("acc-forgot-email").value.trim();
+    const err = document.getElementById("acc-forgot-error");
+    err.classList.add("hidden");
+    try {
+        const res = await fetch("api/account.php?action=forgot_password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        alert(data.message);
+        showAccForm("reset");
+        document.getElementById("acc-reset-form").dataset.email = email;
+    } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove("hidden");
+    }
+}
+
+async function accountResetPassword() {
+    const email = document.getElementById("acc-reset-form").dataset.email;
+    const code = document.getElementById("acc-reset-code").value.trim();
+    const new_password = document.getElementById("acc-reset-newpw").value;
+    const err = document.getElementById("acc-reset-error");
+    err.classList.add("hidden");
+    try {
+        const res = await fetch("api/account.php?action=reset_password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, code, new_password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        alert(data.message);
+        showAccForm("login");
+    } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove("hidden");
+    }
+}

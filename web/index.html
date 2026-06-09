@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="CrossOver DB">
-    <link rel="stylesheet" href="css/style.css?v=1.9.8">
+    <link rel="stylesheet" href="css/style.css?v=2.1.1">
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -48,7 +48,7 @@
             <button class="tab" data-tab="events-tab">イベント一覧</button>
             <button class="tab" data-tab="rankings">ランキング</button>
             <button class="tab" data-tab="search-result">検索結果</button>
-            <button class="tab" data-tab="news">ニュース</button>
+            <button class="tab" data-tab="news">アカウント&ニュース</button>
             <!-- 管理タブ: 必要時にコメント解除 -->
             <!-- <button class="tab" data-tab="admin-tab">管理</button> -->
         </nav>
@@ -57,7 +57,7 @@
             <button class="btab" data-tab="events-tab"><img class="btab-icon" src="img/tab-event.png" alt=""><span class="btab-label">イベント</span></button>
             <button class="btab" data-tab="rankings"><img class="btab-icon" src="img/tab-ranking.png" alt=""><span class="btab-label">ランキング</span></button>
             <button class="btab" data-tab="search-result"><img class="btab-icon" src="img/tab-search.png" alt=""><span class="btab-label">検索</span></button>
-            <button class="btab" data-tab="news"><img class="btab-icon" src="img/tab-board.png" alt=""><span class="btab-label">ニュース</span></button>
+            <button class="btab" data-tab="news"><img class="btab-icon" src="img/tab-board.png" alt=""><span class="btab-label">アカウント</span></button>
         </nav>
 
         <main>
@@ -306,50 +306,138 @@
                 </div>
                 <div id="member-detail" class="hidden"></div>
             </section>
-            <!-- ニュース -->
+            <!-- アカウント & ニュース -->
             <section id="news" class="tab-content">
+                <!-- アカウントブロック -->
+                <div class="account-block">
+                    <h3 class="section-title">アカウント</h3>
+
+                    <!-- 未ログイン: 登録/ログイン -->
+                    <div id="account-guest">
+                        <div class="account-tabs">
+                            <button class="acc-tab active" data-acc="login">ログイン</button>
+                            <button class="acc-tab" data-acc="register">新規登録</button>
+                        </div>
+                        <!-- ログイン -->
+                        <div id="acc-login-form" class="acc-form">
+                            <input type="email" id="acc-login-email" placeholder="@ed.tus.ac.jp のメール" autocomplete="email">
+                            <input type="password" id="acc-login-password" placeholder="パスワード" autocomplete="current-password">
+                            <button onclick="accountLogin()">ログイン</button>
+                            <a href="#" class="acc-link-small" onclick="event.preventDefault();showAccForm('forgot')">パスワードを忘れた方</a>
+                            <p id="acc-login-error" class="acc-error hidden"></p>
+                        </div>
+                        <!-- 新規登録 -->
+                        <div id="acc-register-form" class="acc-form hidden">
+                            <input type="email" id="acc-reg-email" placeholder="@ed.tus.ac.jp のメール" autocomplete="email">
+                            <input type="text" id="acc-reg-name" placeholder="本名フルネーム（例: 山田太郎）" autocomplete="name">
+                            <p class="acc-hint">※ 本名は登録後にマイページから変更できます</p>
+                            <input type="password" id="acc-reg-password" placeholder="パスワード（8文字以上）" autocomplete="new-password">
+                            <label class="acc-consent">
+                                <input type="checkbox" id="acc-consent-check">
+                                <span><a href="terms.html" target="_blank" rel="noopener">利用規約</a>と<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>に同意する</span>
+                            </label>
+                            <button onclick="accountRegister()">認証コードを送信</button>
+                            <p class="acc-hint">※ 学校のメールに6桁の認証コードが届きます（10分間有効）</p>
+                            <p id="acc-reg-error" class="acc-error hidden"></p>
+                        </div>
+                        <!-- 認証コード入力 -->
+                        <div id="acc-verify-form" class="acc-form hidden">
+                            <p class="acc-hint">届いた6桁の認証コードを入力</p>
+                            <input type="text" id="acc-verify-code" placeholder="123456" inputmode="numeric" maxlength="6">
+                            <button onclick="accountVerify()">認証する</button>
+                            <button class="btn-secondary" onclick="accountResend()">コード再送</button>
+                            <p id="acc-verify-error" class="acc-error hidden"></p>
+                        </div>
+                        <!-- パスワード忘れ -->
+                        <div id="acc-forgot-form" class="acc-form hidden">
+                            <p class="acc-hint">登録メールアドレスにリセットコードを送ります</p>
+                            <input type="email" id="acc-forgot-email" placeholder="@ed.tus.ac.jp のメール" autocomplete="email">
+                            <button onclick="accountForgotPassword()">リセットコードを送信</button>
+                            <a href="#" class="acc-link-small" onclick="event.preventDefault();showAccForm('login')">ログインに戻る</a>
+                            <p id="acc-forgot-error" class="acc-error hidden"></p>
+                        </div>
+                        <!-- パスワードリセット入力 -->
+                        <div id="acc-reset-form" class="acc-form hidden">
+                            <p class="acc-hint">届いたコードと新しいパスワードを入力</p>
+                            <input type="text" id="acc-reset-code" placeholder="6桁コード" inputmode="numeric" maxlength="6">
+                            <input type="password" id="acc-reset-newpw" placeholder="新しいパスワード（8文字以上）" autocomplete="new-password">
+                            <button onclick="accountResetPassword()">パスワードを再設定</button>
+                            <p id="acc-reset-error" class="acc-error hidden"></p>
+                        </div>
+                    </div>
+
+                    <!-- ログイン済み（マイページ） -->
+                    <div id="account-logged-in" class="hidden">
+                        <div class="mypage-header">
+                            <p class="account-greeting">こんにちは、<strong id="acc-name"></strong> さん</p>
+                            <p class="acc-email-display" id="acc-email-display"></p>
+                        </div>
+                        <div class="account-links">
+                            <button class="link-btn" onclick="showFavoritesPage()">★ お気に入り</button>
+                            <button class="link-btn" onclick="toggleMypageSection('mypage-edit-name')">本名を変更</button>
+                            <button class="link-btn" onclick="toggleMypageSection('mypage-change-pw')">パスワード変更</button>
+                            <button class="link-btn btn-secondary" onclick="accountLogout()">ログアウト</button>
+                        </div>
+
+                        <!-- 本名変更 -->
+                        <div id="mypage-edit-name" class="mypage-section hidden">
+                            <h4>本名を変更</h4>
+                            <input type="text" id="mp-name-input" placeholder="新しい本名">
+                            <button onclick="updateProfileName()">保存</button>
+                            <p id="mp-name-msg" class="acc-hint"></p>
+                        </div>
+
+                        <!-- パスワード変更 -->
+                        <div id="mypage-change-pw" class="mypage-section hidden">
+                            <h4>パスワード変更</h4>
+                            <input type="password" id="mp-curpw" placeholder="現在のパスワード">
+                            <input type="password" id="mp-newpw" placeholder="新しいパスワード（8文字以上）">
+                            <button onclick="changePassword()">変更</button>
+                            <p id="mp-pw-msg" class="acc-hint"></p>
+                        </div>
+
+                        <!-- アカウント削除 -->
+                        <details class="mypage-danger">
+                            <summary>アカウントを削除</summary>
+                            <div class="mypage-section">
+                                <p class="acc-warn">⚠ アカウントと関連データ（投票・コメント・お気に入り）が完全に削除されます。元に戻せません。</p>
+                                <input type="password" id="mp-delete-pw" placeholder="確認のためパスワード入力">
+                                <button class="btn-danger" onclick="deleteAccount()">アカウントを削除</button>
+                                <p id="mp-delete-msg" class="acc-hint"></p>
+                            </div>
+                        </details>
+
+                        <p class="account-policy-links">
+                            <a href="terms.html" target="_blank" rel="noopener">利用規約</a>　/
+                            <a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>
+                        </p>
+                    </div>
+                </div>
+
+                <hr style="margin:1.5rem 0;border-color:var(--border)">
+
                 <h3 class="section-title">お知らせ</h3>
                 <div class="news-list">
                     <div class="news-item">
-                        <span class="news-date">2026-06-03</span>
+                        <span class="news-date">2026-06-10</span>
                         <span class="news-badge new">NEW</span>
-                        <p class="news-text">トツゲキライブ1日目（21バンド・0曲）のデータを追加しました。</p>
+                        <p class="news-text">アカウント登録後、各ライブの動画に「▲ 投票」ボタンから推しバンドへ投票できるようになりました。投票期間はライブ公開から3日間です。</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-06-03</span>
+                        <p class="news-text">アカウント機能を追加（コメント・お気に入り）</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-06-01</span>
+                        <p class="news-text">ログイン画面のデザインを刷新</p>
+                    </div>
+                    <div class="news-item">
+                        <span class="news-date">2026-06-01</span>
+                        <p class="news-text">最新ライブのデータを追加</p>
                     </div>
                     <div class="news-item">
                         <span class="news-date">2026-05-13</span>
-                        <p class="news-text">5月ライブ2日目（16バンド・29曲）のデータを追加しました。</p>
-                    </div>
-                    <div class="news-item">
-                        <span class="news-date">2026-04-21</span>
-                        <p class="news-text">4月ライブ　2日目（11バンド・21曲）のデータを追加しました。</p>
-                    </div>
-                    <div class="news-item">
-                        <span class="news-date">2026-03-31</span>
-                        <p class="news-text">2026卒業ライブ（16バンド・30曲）のデータを追加しました。</p>
-                    </div>
-                    <div class="news-item">
-                        <span class="news-date">2026-03-31</span>
-                        <p class="news-text">全1,139動画の視聴回数を最新に更新しました（総視聴回数: 85,574回）。</p>
-                    </div>
-                    <div class="news-item">
-                        <span class="news-date">2026-03-24</span>
-                        <p class="news-text">新合同ライブ2（12バンド）のデータを追加しました。</p>
-                    </div>
-                    <div class="news-item">
-                        <span class="news-date">2026-03-17</span>
-                        <p class="news-text">2月ライブ（23バンド）のデータを追加しました。</p>
-                    </div>
-                    <div class="news-item">
-                        <span class="news-date">2026-03-17</span>
-                        <p class="news-text">スタジオ予約リンク・料金比較を追加しました。</p>
-                    </div>
-                    <div class="news-item">
-                        <span class="news-date">2026-03-16</span>
-                        <p class="news-text">ブックマーク案内、サイトアイコンを追加しました。</p>
-                    </div>
-                    <div class="news-item">
-                        <span class="news-date">2026-03-14</span>
-                        <p class="news-text">サーバー認証を導入しました。データの安全性が向上しています。</p>
+                        <p class="news-text">5月ライブのデータを追加</p>
                     </div>
                 </div>
 
@@ -440,12 +528,43 @@
         </main>
 
         <footer>
-            <p>データ更新日: <span id="generated-at">-</span> ／ v1.9.8</p>
+            <p>データ更新日: <span id="generated-at">-</span> ／ v2.1.1</p>
             <p class="visitor-count">今日の訪問者: <span id="visitor-today">-</span>人 ／ 累計: <span id="visitor-total">-</span>人</p>
 
             <details class="changelog">
                 <summary>更新履歴</summary>
                 <dl class="changelog-list">
+                    <dt>v2.1.1 (2026-06-10)</dt>
+                    <dd>
+                        <ul>
+                            <li>動画への投票機能を公開</li>
+                            <li>コメントに投稿者名を表示、自分のコメントは削除可能に</li>
+                            <li>投票期間が終了したライブには投票ボタンを表示しないように変更</li>
+                        </ul>
+                    </dd>
+                    <dt>v2.0.1 (2026-06-09)</dt>
+                    <dd>
+                        <ul>
+                            <li>登録時の本名入力欄に「後から変更可能」の注意書きを追加</li>
+                        </ul>
+                    </dd>
+                    <dt>v2.0.0 (2026-06-09)</dt>
+                    <dd>
+                        <ul>
+                            <li>マイページ機能を追加（本名・パスワード変更、アカウント削除）</li>
+                            <li>パスワードリセット機能を追加</li>
+                            <li>プライバシーポリシー・利用規約ページを追加</li>
+                            <li>登録時の同意確認を追加</li>
+                        </ul>
+                    </dd>
+                    <dt>v1.9.9 (2026-06-03)</dt>
+                    <dd>
+                        <ul>
+                            <li>個人アカウント機能を追加（メール認証＋パスワード）</li>
+                            <li>動画への投票・コメント・お気に入り機能を追加</li>
+                            <li>アカウント情報をニュースタブに統合</li>
+                        </ul>
+                    </dd>
                     <dt>v1.9.8 (2026-06-01)</dt>
                     <dd>
                         <ul>
@@ -671,8 +790,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="js/app.js?v=1.9.8"></script>
-    <script src="js/search.js?v=1.9.8"></script>
-    <script src="js/admin.js?v=1.9.8"></script>
+    <script src="js/app.js?v=2.1.1"></script>
+    <script src="js/search.js?v=2.1.1"></script>
+    <script src="js/admin.js?v=2.1.1"></script>
 </body>
 </html>

@@ -1167,3 +1167,336 @@ footer {
 .news-badge { font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 3px; font-weight: 700; }
 .news-badge.new { background: #e74c3c; color: #fff; }
 .news-text { font-size: 0.85rem; }
+
+/* === アカウントセクション === */
+.account-block {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+}
+.account-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 1rem;
+}
+.acc-tab {
+    flex: 1;
+    padding: 0.7rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-size: 0.9rem;
+}
+.acc-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+.acc-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.acc-form input {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: #fff;
+}
+.acc-form input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+.acc-form button {
+    padding: 0.75rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+.acc-form button:hover {
+    background: var(--primary-light);
+}
+.acc-form button.btn-secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+.acc-form button.btn-secondary:hover {
+    background: var(--border);
+}
+.acc-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0.2rem 0;
+}
+.acc-error {
+    color: #e53935;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    background: rgba(229, 57, 53, 0.08);
+    border-radius: 4px;
+}
+.account-greeting {
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+}
+.account-links {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.link-btn {
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.link-btn:hover { background: var(--primary-light); }
+.link-btn.btn-secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+/* === 投票・お気に入り・コメント === */
+.vid-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin: 0.8rem 0;
+}
+.vid-action-btn {
+    padding: 0.5rem 0.9rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.vid-action-btn.active {
+    background: #FFD400;
+    color: #000;
+    border-color: #FFD400;
+    font-weight: 700;
+}
+.vid-action-btn:hover {
+    border-color: var(--primary);
+}
+.vote-info {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+}
+.comment-section {
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.comment-form textarea {
+    padding: 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 60px;
+}
+.comment-form button {
+    align-self: flex-end;
+    padding: 0.45rem 1rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.comment-item {
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.comment-item:last-child { border-bottom: none; }
+.comment-meta {
+    font-size: 0.8rem;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+}
+.comment-date {
+    color: var(--text-muted);
+    font-weight: normal;
+    font-size: 0.75rem;
+    margin-left: 0.3rem;
+}
+.comment-content {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* === マイページ・規約同意・リセット === */
+.acc-link-small {
+    display: inline-block;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-top: 0.2rem;
+    text-align: center;
+}
+.acc-link-small:hover { text-decoration: underline; color: var(--primary); }
+
+.acc-consent {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    padding: 0.5rem 0;
+    color: var(--text-muted);
+}
+.acc-consent input[type="checkbox"] {
+    width: 16px; height: 16px;
+    margin: 0;
+}
+.acc-consent a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.mypage-header {
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+}
+.acc-email-display {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+.mypage-section {
+    background: #f7f9fc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.mypage-section h4 {
+    font-size: 0.92rem;
+    color: var(--text);
+    margin-bottom: 0.2rem;
+}
+.mypage-section input {
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+.mypage-section button {
+    align-self: flex-start;
+    padding: 0.5rem 1.2rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.mypage-section button.btn-danger {
+    background: #d32f2f;
+}
+.mypage-section button.btn-danger:hover { background: #b71c1c; }
+
+.mypage-danger {
+    margin-top: 1.2rem;
+    border: 1px solid #ffcdd2;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+}
+.mypage-danger summary {
+    cursor: pointer;
+    color: #c62828;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.3rem 0;
+}
+.acc-warn {
+    background: #fff8e1;
+    border-left: 3px solid #ffb300;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.82rem;
+    border-radius: 4px;
+    color: #5d4037;
+}
+
+.account-policy-links {
+    text-align: center;
+    margin-top: 1.2rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.account-policy-links a {
+    color: var(--primary);
+    text-decoration: none;
+}
+.account-policy-links a:hover { text-decoration: underline; }
+
+/* === コメントヘッダー・削除ボタン === */
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+    font-size: 0.8rem;
+}
+.comment-author {
+    font-weight: 700;
+    color: var(--text);
+}
+.comment-date {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: normal;
+}
+.comment-delete-btn {
+    margin-left: auto;
+    padding: 0.15rem 0.5rem;
+    background: transparent;
+    border: 1px solid #e57373;
+    color: #c62828;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+}
+.comment-delete-btn:hover {
+    background: #ffebee;
+}

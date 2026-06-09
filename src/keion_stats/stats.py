@@ -42,41 +42,22 @@ def infer_current_grade(name: str, videos: list[ParsedVideo], today: date | None
     if not appearances:
         return "?"
 
-    # 日付順にソート
-    appearances.sort(key=lambda x: x[0])
-
-    # 最新の出演記録を基準にする
-    latest_date, latest_grade = appearances[-1]
-    latest_grade_int = int(latest_grade)
-    latest_ay = _academic_year(latest_date)
-
-    # 経過年度
-    years_passed = current_ay - latest_ay
-
-    # 留年チェック: 同一人物で学年が下がる or 据え置きのケースを検出
-    # 例: 2024年度に2年、2025年度にも2年 → 留年
+    # 年度別の最大学年を集計（同年度に複数の学年表記があれば最大を採用）
+    # 概要欄の誤記や混在に対するロバスト性のため
     grade_by_ay: dict[int, int] = {}
     for d, g in appearances:
         ay = _academic_year(d)
         g_int = int(g)
-        # 同年度の最大学年を記録
         if ay not in grade_by_ay or g_int > grade_by_ay[ay]:
             grade_by_ay[ay] = g_int
 
-    # 学年進行が正常か確認（各年度で1ずつ上がるべき）
-    # 据え置きや戻りがあれば留年と判断
     sorted_ays = sorted(grade_by_ay.keys())
-    actual_latest_grade = latest_grade_int
+    latest_ay = sorted_ays[-1]
+    # その年度における最大学年を基準にする
+    actual_latest_grade = grade_by_ay[latest_ay]
 
-    if len(sorted_ays) >= 2:
-        # 最後の2年度を比較
-        prev_ay = sorted_ays[-2]
-        last_ay = sorted_ays[-1]
-        expected = grade_by_ay[prev_ay] + (last_ay - prev_ay)
-        actual = grade_by_ay[last_ay]
-        if actual < expected:
-            # 留年: 推定もそのまま据え置き
-            actual_latest_grade = actual
+    # 経過年度
+    years_passed = current_ay - latest_ay
 
     # 推定現在学年
     inferred = actual_latest_grade + years_passed
